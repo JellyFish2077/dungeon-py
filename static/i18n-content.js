@@ -1331,18 +1331,10 @@
   translateTaskBank(typeof ERROR_TASKS !== "undefined" ? ERROR_TASKS : null, taskBanks.error);
 
   /* --- генераторы --- */
-  // variants.js и practice-variants.js собирают задания из русских
-  // шаблонов. Английский банк вопросов и практики переведён целиком,
-  // генераторы — отдельная фаза: пока они выключены, в английской версии
-  // не появится ни одной русской строки.
-  if (typeof QUESTIONS !== "undefined" && Array.isArray(QUESTIONS)) {
-    for (var qi = QUESTIONS.length - 1; qi >= 0; qi--) {
-      if (QUESTIONS[qi] && QUESTIONS[qi].generated) QUESTIONS.splice(qi, 1);
-    }
-  }
-  if (typeof window.PracticeVariants !== "undefined" && window.PracticeVariants) {
-    window.PracticeVariants.list = [];
-  }
+  // variants.js и practice-variants.js собирают задания сразу на языке
+  // интерфейса: каждый шаблон хранит обе версии текста рядом, а логика,
+  // ответы и проверки остаются общими. Поэтому в английской версии
+  // генераторы включены так же, как в русской.
 
   /* --- лента обновлений --- */
   // История правок длиннее двухсот строк и остаётся русской: для английской
@@ -1364,6 +1356,16 @@
         "</div><button class='exit-btn' id='updates-close' type='button' " +
         "data-tip='Close updates. Escape.'>Close</button></div>" +
         "<div class='battle-mid updates-body'>" +
+        "<article class='update-entry'>" +
+        "<div class='update-entry-head'><h3>English practice</h3>" +
+        "<span class='update-version'>v1.55.8</span></div>" +
+        "<div class='update-date'>November 16, 2026</div>" +
+        "<ul>" +
+        "<li>Battle questions and practice tasks are generated in the language of the interface.</li>" +
+        "<li>All 196 practice templates (blanks, errors, copying, functions) are available in English.</li>" +
+        "<li>Changing the language now reloads the game, so questions and the codex follow the switch.</li>" +
+        "<li>Elite enemy names and epithets are translated together with the interface.</li>" +
+        "</ul></article>" +
         "<article class='update-entry'>" +
         "<div class='update-entry-head'><h3>Achievements and doors</h3>" +
         "<span class='update-version'>v1.55.7</span></div>" +

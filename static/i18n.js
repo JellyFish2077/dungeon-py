@@ -56,13 +56,25 @@
   function setLanguage(code) {
     code = normalize(code) || "ru";
     try { localStorage.setItem(STORAGE_KEY, code); } catch (e) {}
-    LANG = code;
-    if (code === "ru") {
-      // Перезагрузка возвращает исходные русские строки: обратный перевод
-      // из DOM не нужен, а игра восстанавливает состояние из автосейва.
-      if (currentIsEnglish()) reload();
+    // Банк вопросов, предметы и генераторы собираются на языке интерфейса
+    // при загрузке страницы. Без перезагрузки интерфейс перевёлся бы, а
+    // вопросы и кодекс остались на прежнем языке, поэтому смена языка — это
+    // перезагрузка: игра восстанавливает поход из автосейва.
+    if (code !== LANG) {
+      LANG = code;
+      // Если язык пришёл параметром адреса (?lang=ru), он главнее
+      // localStorage: без правки адреса перезагрузка вернула бы старый.
+      try {
+        var url = new URL(location.href);
+        if (url.searchParams.has("lang")) {
+          url.searchParams.set("lang", code);
+          history.replaceState(null, "", url.toString());
+        }
+      } catch (e) { /* старый браузер */ }
+      reload();
       return;
     }
+    LANG = code;
     translateDocument();
     syncSwitch();
   }

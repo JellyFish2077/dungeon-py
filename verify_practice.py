@@ -33,6 +33,7 @@ PROBE = r"""
 const fs = require("fs"), vm = require("vm");
 const ctx = vm.createContext({ console, Math, JSON, Array, Object, String, Number, Set, Map });
 ctx.window = ctx; ctx.globalThis = ctx;
+if (process.argv[2] === "en") ctx.__PYQUIZ_LANG = "en";
 vm.runInContext(fs.readFileSync("static/questions.js", "utf8"), ctx);
 vm.runInContext(fs.readFileSync("static/practice-variants.js", "utf8"), ctx);
 const api = ctx.PracticeVariants;
@@ -82,7 +83,7 @@ json.dump(out, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)
 '''
 
 # Подсказка о выводе прямо в коде задания.
-SAYS = re.compile(r"# (?:выведет|выведет только|нужно получить): (.*)$", re.M)
+SAYS = re.compile(r"# (?:выведет только|выведет|нужно получить|prints only|prints|should print): (.*)$", re.M)
 # Название и пояснение игра вставляет как разметку: тегов и & там быть не должно.
 MARKUP = re.compile(r"<[A-Za-z/!?]|&")
 # Столько знаков кода влезает в строку на экране телефона; длиннее — строка
@@ -90,9 +91,9 @@ MARKUP = re.compile(r"<[A-Za-z/!?]|&")
 MAX_LINE = 38
 
 
-def probe(n):
+def probe(n, lang="ru"):
     # Кодировка вывода node на Windows — cp866/cp1251, поэтому читаем байты.
-    res = subprocess.run(["node", "-e", PROBE, str(n)], cwd=ROOT, capture_output=True)
+    res = subprocess.run(["node", "-e", PROBE, str(n), lang], cwd=ROOT, capture_output=True)
     if res.returncode != 0:
         print("не удалось получить задания из node:",
               res.stderr.decode("utf-8", "replace").strip()[:800])
@@ -130,15 +131,33 @@ def shown(r):
 
 
 def main():
-    n = int(sys.argv[1]) if len(sys.argv) > 1 else 40
-    data = probe(n)
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    lang = "en" if "--lang=en" in sys.argv or "en" in args else "ru"
+    nums = [a for a in args if a.isdigit()]
+    n = int(nums[0]) if nums else 40
+    data = probe(n, lang)
     if not data:
         return 1
     problems = []
+    cyr = re.compile(r"[А-Яа-яЁё]")
 
     def fail(item, msg):
         t = item.get("task") or {}
         problems.append(f"{item['key']}: {msg}\n    " + str(t.get("code", "")).replace("\n", "\n    "))
+
+    if lang == "en":
+        for item in data["tasks"]:
+            t = item["task"] or {}
+            fields = ["title", "task", "explanation", "code", "starter", "solution", "expect"]
+            for field in fields:
+                if cyr.search(str(t.get(field, ""))):
+                    fail(item, f"кириллица в {field}: {t.get(field)!r}")
+            for opt in t.get("options") or []:
+                if cyr.search(str(opt)):
+                    fail(item, f"кириллица в варианте: {opt!r}")
+            for x in t.get("tests") or []:
+                if cyr.search(str(x.get("call", ""))):
+                    fail(item, f"кириллица в тесте: {x.get('call')!r}")
 
     keys = [t["key"] for t in data["list"]]
     if len(keys) != len(set(keys)):

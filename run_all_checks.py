@@ -43,6 +43,7 @@ ALL_CHECKS = [
     ("verify_content.py", "контент: ссылки, id, боссы и курс", "node"),
     ("verify_variants.py", "генератор вариантов вопросов", "node"),
     ("verify_practice.py", "генератор практики, прогон кода на Python", "node"),
+    ("verify_practice.py --lang=en", "генератор практики: английские тексты", "node"),
     ("verify_dungeon.py", "подземелье: 900+ проверок в node", "node"),
     ("verify_web.py", "публичная веб-сборка (Playwright)", "browser"),
     ("verify_scenarios.py", "сценарии: боссы, диалог, удержание (Playwright)", "browser"),
@@ -58,7 +59,7 @@ def run(script, quiet=False):
     """Запускает проверку, печатает её вывод, возвращает (код, секунды)."""
     started = time.time()
     proc = subprocess.run(
-        [sys.executable, script],
+        [sys.executable] + script.split(),
         cwd=ROOT,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
@@ -112,7 +113,8 @@ def main():
             print("Ошибка: неизвестная проверка: %s" % ", ".join(unknown))
             print("Доступно: %s" % ", ".join(c[0] for c in ALL_CHECKS))
             return 2
-        checks = [c for c in checks if c[0] in wanted]
+        checks = [c for c in checks
+                  if c[0] in wanted or c[0].split()[0] in wanted]
         if not checks:
             print("Ошибка: выбранные проверки не входят в --quick.")
             return 2
