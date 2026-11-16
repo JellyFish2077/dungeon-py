@@ -18,8 +18,8 @@ in `assets/itch/screenshots/`.
 - **Genre:** RPG / Roguelike / Educational
 - **Platform:** HTML5, browser
 - **Language:** English (also Russian)
-- **Website:** https://jellyfish2077.github.io/Dungeon-of-Python/
-- **GitHub:** https://github.com/JellyFish2077/Dungeon-of-Python
+- **Website:** https://jellyfish2077.github.io/dungeon-py/
+- **GitHub:** https://github.com/JellyFish2077/dungeon-py
 
 ## Tags
 
@@ -76,7 +76,7 @@ first. Direction, editing and final decisions are mine.
 
 I am now collecting player feedback — what is clear, what is frustrating,
 where the difficulty spikes — to improve and develop the concept. Comments on
-the itch page or [GitHub issues](https://github.com/JellyFish2077/Dungeon-of-Python/issues)
+the itch page or [GitHub issues](https://github.com/JellyFish2077/dungeon-py/issues)
 are equally welcome.
 
 ### Support the project

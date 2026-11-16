@@ -36,7 +36,7 @@ Dungeon.Py — подземелье, где код — оружие
 Игра уже доступна и бесплатна:
 
 - [Dungeon.Py на itch.io](https://jellyfish2077.itch.io/) — ссылку заменить на свою
-- [Dungeon.Py на GitHub Pages](https://jellyfish2077.github.io/Dungeon-of-Python/)
+- [Dungeon.Py на GitHub Pages](https://jellyfish2077.github.io/dungeon-py/)
 
 В игре нет рекламы, подписок и серверов. Сохранения лежат в браузере,
 Python-код проверяется локально через Pyodide. Язык интерфейса — русский

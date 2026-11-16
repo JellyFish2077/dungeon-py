@@ -18,8 +18,8 @@
 - **Жанр:** RPG / Roguelike / Educational
 - **Платформа:** HTML5, браузер
 - **Язык:** русский
-- **Ссылка на сайт:** https://jellyfish2077.github.io/Dungeon-of-Python/
-- **GitHub:** https://github.com/JellyFish2077/Dungeon-of-Python
+- **Ссылка на сайт:** https://jellyfish2077.github.io/dungeon-py/
+- **GitHub:** https://github.com/JellyFish2077/dungeon-py
 
 ## Теги
 
@@ -74,7 +74,7 @@ Python в игровой форме, а не в формате теста: ко�
 
 Сейчас собираю обратную связь игроков — что понятно, что раздражает, где
 скачки сложности — чтобы улучшать и развивать концепцию. Комментарии на
-странице itch или в [GitHub issues](https://github.com/JellyFish2077/Dungeon-of-Python/issues)
+странице itch или в [GitHub issues](https://github.com/JellyFish2077/dungeon-py/issues)
 одинаково полезны.
 
 ### Поддержать проект

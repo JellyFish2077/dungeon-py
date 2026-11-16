@@ -50,7 +50,7 @@ Actions → Deploy Pages → Run workflow. Он прогоняет
 остаётся осознанным действием. Ручной способ выше тоже работает, если
 Actions недоступны.
 
-Адрес: https://jellyfish2077.github.io/Dungeon-of-Python/
+Адрес: https://jellyfish2077.github.io/dungeon-py/
 
 ## Itch.io
 

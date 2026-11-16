@@ -1693,7 +1693,7 @@
 ### Инфраструктура
 
 - **GitHub Pages.** Публичная сборка 1.6.1 опубликована из ветки `gh-pages`
-  (`https://jellyfish2077.github.io/Dungeon-of-Python/`). Workflow
+  (`https://jellyfish2077.github.io/dungeon-py/`). Workflow
   `.github/workflows/pages.yml` остаётся в истории, но убран из `main`: PAT без
   scope `workflow` не может его обновлять. Пошаговая инструкция — `HOSTING.md`;
   классный сервер на Pages не работает.

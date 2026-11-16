@@ -11,7 +11,7 @@
 Hello! I'm the developer of **Dungeon.Py**, a small browser roguelike where you
 fight with Python knowledge.
 
-**Play in your browser:** https://jellyfish2077.github.io/Dungeon-of-Python/
+**Play in your browser:** https://jellyfish2077.github.io/dungeon-py/
 
 The idea came from teaching. I kept seeing students who could recognise syntax
 in a test but froze when they had to use it. I wanted a place where a Python
@@ -57,8 +57,8 @@ Boosty. Thank you for playing.
 ## Ссылки в конце
 
 ```text
-Play: https://jellyfish2077.github.io/Dungeon-of-Python/
-GitHub: https://github.com/JellyFish2077/Dungeon-of-Python
+Play: https://jellyfish2077.github.io/dungeon-py/
+GitHub: https://github.com/JellyFish2077/dungeon-py
 Boosty: https://boosty.to/YOUR_PAGE
 ```
 
@@ -69,7 +69,7 @@ Boosty: https://boosty.to/YOUR_PAGE
 Привет! Я делаю **Dungeon.Py** — небольшую браузерную рогалик-игру, где
 сражаешься знаниями Python.
 
-**Играть в браузере:** https://jellyfish2077.github.io/Dungeon-of-Python/
+**Играть в браузере:** https://jellyfish2077.github.io/dungeon-py/
 
 Идея выросла из преподавания. Я видел студентов, которые узнают синтаксис в
 тесте, но теряются, когда нужно применить его в деле. Мне хотелось место, где
