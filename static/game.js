@@ -12486,6 +12486,12 @@
       return;
     }
     snapshotCurrent();
+    // Первый спуск закрывает обучение: дальше игрок уже видел шаг, сундук,
+    // бой, привал и лестницу.
+    if (G.tutorial && G.tutorial.active) {
+      tutorialEvent("stairs");
+      tutorialFinish(false);
+    }
     const next = G.floorIndex + 1;
     // visited пополняет activateFloor — там же показывается эпиграф этажа.
     // Чистый этаж засчитывается только один раз: подъём наверх и повторный
@@ -16018,15 +16024,52 @@ function topicName(key) {
     return "WASD или стрелки — идти · E — действие · Пробел — пропустить ход.";
   }
 
+  // Шаги обучения: каждый отмечается событием самой игры, а не отдельной
+  // кнопкой. Пока шаг не пройден, панель остаётся на экране — раньше она
+  // гасла после первого хода, и сундук, бой и привал игрок находил сам.
+  function tutorialSteps() {
+    return [
+      { id: "move", title: "Шаг по карте",
+        hint: "Иди стрелками, WASD или кликом по клетке." },
+      { id: "chest", title: "Сундук",
+        hint: "Подойди к сундуку и нажми E: внутри предмет или материал." },
+      { id: "battle", title: "Бой",
+        hint: "Столкнись с монстром и ответь на вопрос: верный ответ — твой удар." },
+      { id: "camp", title: "Привал",
+        hint: "Костёр возвращает здоровье. Привалов на этаже немного." },
+      { id: "stairs", title: "Спуск",
+        hint: "Найди лестницу вниз: идти глубже можно, даже если монстры живы." }
+    ];
+  }
+
+  function tutorialStepDone(state, id) {
+    if (id === "move") return state.moves >= 1;
+    return !!state[id];
+  }
+
   function tutorialRender() {
     const panel = tutorialPanelEl();
     const state = G.tutorial;
     if (!panel || !state) return;
-    if (state.moves >= 1) {
+    const steps = tutorialSteps();
+    const done = steps.filter((s) => tutorialStepDone(state, s.id));
+    if (done.length >= steps.length) {
       tutorialFinish(false);
       return;
     }
     panel.classList.remove("hidden");
+    const current = steps.find((s) => !tutorialStepDone(state, s.id));
+    const progress = el("tutorial-progress");
+    if (progress) progress.textContent = done.length + " / " + steps.length;
+    const list = el("tutorial-steps");
+    if (list) {
+      list.innerHTML = steps.map((s) => {
+        const isDone = tutorialStepDone(state, s.id);
+        const cls = isDone ? "is-done" : (s === current ? "is-current" : "");
+        return "<li class='" + cls + "'><b>" + escText(s.title) + "</b>" +
+          "<span>" + escText(isDone ? "Готово" : s.hint) + "</span></li>";
+      }).join("");
+    }
     const hint = el("tutorial-hint");
     if (hint) hint.textContent = tutorialHint();
   }
@@ -16145,17 +16188,17 @@ function topicName(key) {
   function tutorialStart() {
     if (G.tutorial && G.tutorial.active) return;
     if (!tutorialEligible() || !tutorialPanelEl()) return;
-    G.tutorial = { active: true, moves: 0, chest: false, battle: false, camp: false };
+    G.tutorial = { active: true, moves: 0, chest: false, battle: false, camp: false, stairs: false };
     tutorialEnsureObjects();
     tutorialRender();
-    setMsg("Управление: " + tutorialHint());
+    setMsg("Обучение: " + tutorialHint());
   }
 
   function tutorialEvent(kind) {
     if (!G.tutorial || !G.tutorial.active) return;
     if (kind === "move") {
       G.tutorial.moves += 1;
-    } else if (kind === "chest" || kind === "battle" || kind === "camp") {
+    } else if (kind === "chest" || kind === "battle" || kind === "camp" || kind === "stairs") {
       G.tutorial[kind] = true;
     }
     tutorialRender();
@@ -17530,6 +17573,17 @@ function topicName(key) {
   // ---------- Обновления ----------
   // Короткая лента новостей для главного меню. Новые записи — сверху.
   const UPDATES = [
+    {
+      version: "1.55.9",
+      date: "16 ноября 2026",
+      title: "Обучение первого спуска",
+      items: [
+        "Вместо одноразовой памятки — пять шагов: движение, сундук, бой, привал, спуск.",
+        "Шаг закрывается сам, когда игрок действительно это сделал; панель больше не исчезает после первого хода.",
+        "Рядом с героем появляются сундук, костёр и слизь, чтобы обучение не искало их по всей карте.",
+        "Обучение можно пропустить в любой момент; пройденное запоминается."
+      ]
+    },
     {
       version: "1.55.8",
       date: "16 ноября 2026",

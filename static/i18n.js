@@ -697,6 +697,26 @@
       "Copy the text and save it to a file. Import will take it back.",
     "WASD или стрелки — идти · E — действие · Пробел — пропустить ход.":
       "WASD or arrows — move · E — act · Space — skip a turn.",
+    "Коснись клетки — идти · тяни карту — камера · кнопки внизу — действие и пропуск хода.":
+      "Tap a tile — move · drag the map — camera · buttons below — act and skip a turn.",
+    "Пропустить": "Skip",
+    "Шаг по карте": "A step on the map",
+    "Иди стрелками, WASD или кликом по клетке.":
+      "Move with arrows, WASD or by clicking a tile.",
+    "Сундук": "Chest",
+    "Подойди к сундуку и нажми E: внутри предмет или материал.":
+      "Walk up to the chest and press E: it holds an item or a material.",
+    "Столкнись с монстром и ответь на вопрос: верный ответ — твой удар.":
+      "Run into a monster and answer the question: a correct answer is your strike.",
+    "Костёр возвращает здоровье. Привалов на этаже немного.":
+      "A campfire restores health. There are only a few camps on a floor.",
+    "Спуск": "Descent",
+    "Найди лестницу вниз: идти глубже можно, даже если монстры живы.":
+      "Find the stairs down: you can go deeper even if monsters are still alive.",
+    "Обучение: WASD или стрелки — идти · E — действие · Пробел — пропустить ход.":
+      "Tutorial: WASD or arrows — move · E — act · Space — skip a turn.",
+    "Обучение: Коснись клетки — идти · тяни карту — камера · кнопки внизу — действие и пропуск хода.":
+      "Tutorial: tap a tile — move · drag the map — camera · buttons below — act and skip a turn.",
     "Кузница: вложить золото в урон, защиту или здоровье.":
       "Forge: invest gold in damage, defence or health.",
     "Пауза: сохранить, загрузить, настройки, выйти в меню.":
@@ -738,7 +758,7 @@
     /* --- журнал: каркас --- */
     "Поручение": "Quest",
     "Учитель": "Teacher",
-    "Готово": "Ready",
+    "Готово": "Done",
     "Побеждён": "Defeated",
     "Встречен": "Encountered",
     "Путь кампании": "Campaign path",
