@@ -1,4 +1,4 @@
-/* PyDungeon — локализация.
+/* Dungeon.Py — локализация.
  *
  * Русский — исходный язык: игра собирает русские строки. В английском
  * режиме переводятся уже готовые строки на границе DOM, поэтому игровая
@@ -409,8 +409,8 @@
       "The file didn't download — the backup is open as text.",
     "Импортировать": "Import",
     "Импортировать сохранения?": "Import saves?",
-    "Это не файл резервной копии PyDungeon.":
-      "This isn't a PyDungeon backup file.",
+    "Это не файл резервной копии Dungeon.Py.":
+      "This isn't a Dungeon.Py backup file.",
     "В файле нет сохранений.": "The file contains no saves.",
     "В файле нет подходящих сохранений.": "The file contains no matching saves.",
     "Не удалось прочитать файл.": "Couldn't read the file.",
@@ -673,8 +673,8 @@
       "Sign in on the main page — then gold and amulets will accumulate between expeditions.",
     "Дома отмечены дверьми: подойди и нажми E. У стража у входа — спуск в подземелье.":
       "Houses are marked by doors: walk up and press E. The gate warden has the descent into the dungeon.",
-    "PyDungeon — рогалик-экспедиция: спускайся по этажам, отвечай на вопросы по Python и пиши функции. Золото, материалы и ключи остаются в деревне даже после поражения.":
-      "PyDungeon is a roguelike expedition: descend floor by floor, answer Python questions and write functions. Gold, materials and keys stay in the village even after a defeat.",
+    "Dungeon.Py — рогалик-экспедиция: спускайся по этажам, отвечай на вопросы по Python и пиши функции. Золото, материалы и ключи остаются в деревне даже после поражения.":
+      "Dungeon.Py is a roguelike expedition: descend floor by floor, answer Python questions and write functions. Gold, materials and keys stay in the village even after a defeat.",
     "Каждый поход начинается у стража: он показывает сложность и режим. Пятнадцать этажей, пять боссов и дракон в конце. Управление и звук — в настройках.":
       "Every expedition starts with the gate warden: he shows the difficulty and mode. Fifteen floors, five bosses and a dragon at the end. Controls and sound are in the settings.",
     ". Публичная сборка работает без сервера: профиль и сохранения лежат в этом браузере.":

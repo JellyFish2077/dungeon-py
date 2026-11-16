@@ -1,4 +1,4 @@
-// Сохранения PyDungeon: список ячеек и карточка выбранной.
+// Сохранения Dungeon.Py: список ячеек и карточка выбранной.
 //
 // Меню не хранит игровое состояние само: снимок делает PyGameMenuAPI
 // (buildSaveData / captureSnapshot), а здесь только localStorage, названия,
@@ -466,7 +466,7 @@
     }
     const text = JSON.stringify(backupData(), null, 2);
     const stamp = new Date().toISOString().slice(0, 10);
-    const filename = "pydungeon-saves-" + stamp + ".json";
+    const filename = "dungeonpy-saves-" + stamp + ".json";
     try {
       const blob = new Blob([text], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -555,7 +555,7 @@
         parsed = JSON.parse(String(reader.result || ""));
       } catch (e) {
         sound("wrong");
-        setStatus("Это не файл резервной копии PyDungeon.", "error");
+        setStatus("Это не файл резервной копии Dungeon.Py.", "error");
         return;
       }
       const incoming = Array.isArray(parsed) ? parsed
