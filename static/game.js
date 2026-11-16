@@ -2039,15 +2039,23 @@
         if (hasEdge(a.id, b.id)) continue;
         if (a.kind === "branch" && b.kind === "branch") continue;
         if (!genV3RoomsAdjacent(a, b)) continue;
-        candidates.push({ a: a.id, b: b.id });
+        // Комнаты через одну клетку — это общая стена: такие пары
+        // соединяем в первую очередь, чтобы игрок видел дверь, а не обход.
+        const ar = a.rect;
+        const br = b.rect;
+        const gapX = Math.max(ar.x, br.x) - Math.min(ar.x + ar.w, br.x + br.w);
+        const gapY = Math.max(ar.y, br.y) - Math.min(ar.y + ar.h, br.y + br.h);
+        candidates.push({ a: a.id, b: b.id, touch: gapX === 1 || gapY === 1 });
       }
     }
     if (!candidates.length) return;
-    const cap = 3 + (plan.biome === "caves" ? 1 : 0);
+    const cap = 4 + (plan.biome === "caves" ? 1 : 0);
     let added = 0;
-    genShuffle(rng, candidates).forEach((pair) => {
+    const ordered = genShuffle(rng, candidates.slice()).sort((a, b) =>
+      (b.touch ? 1 : 0) - (a.touch ? 1 : 0));
+    ordered.forEach((pair) => {
       if (added >= cap) return;
-      if (rng() >= 0.70) return;
+      if (!pair.touch && rng() >= 0.45) return;
       plan.edges.push({ a: pair.a, b: pair.b, kind: "loop" });
       added += 1;
     });
@@ -2277,6 +2285,17 @@
         if (edge.kind === "loop" || edge.kind === "crypt") edge.dead = true;
         else plan.warnings.push("связь " + edge.a + "-" + edge.b + " не проложена");
         return;
+      }
+      // Склеповая дверь — только прямой короткий проём: длинный L
+      // превращает «дверь» в ещё один коридор и ломает читаемость.
+      if (edge.kind === "crypt") {
+        const straight = cells.length > 0 &&
+          (cells.every((c) => c.y === cells[0].y) ||
+           cells.every((c) => c.x === cells[0].x));
+        if (!straight || cells.length > 5) {
+          edge.dead = true;
+          return;
+        }
       }
       cells.forEach((c) => { grid[c.y][c.x] = 1; });
       edge.cells = cells;
@@ -17504,6 +17523,16 @@ function topicName(key) {
   // Короткая лента новостей для главного меню. Новые записи — сверху.
   const UPDATES = [
     {
+      version: "1.55.7",
+      date: "16 ноября 2026",
+      title: "Достижения и двери",
+      items: [
+        "Достижения открываются из инвентаря: карточки со звёздами и описаниями.",
+        "Соседние комнаты соединяются дверьми в стене, а не коридорами в обход.",
+        "Склепы больше не тянут длинные изогнутые проходы через полкарты."
+      ]
+    },
+    {
       version: "1.55.6",
       date: "16 ноября 2026",
       title: "Кодекс на английском",
@@ -20228,6 +20257,10 @@ function topicName(key) {
     });
     const hudStory = el("hud-story");
     if (hudStory) hudStory.addEventListener("click", () => openJournal("story"));
+    const achievementsBtn = el("open-achievements");
+    if (achievementsBtn) {
+      achievementsBtn.addEventListener("click", () => openGamePanel("achievements"));
+    }
     document.querySelectorAll("[data-panel-close]").forEach((btn) => {
       btn.addEventListener("click", closeGamePanel);
     });

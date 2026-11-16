@@ -1365,6 +1365,15 @@
         "data-tip='Close updates. Escape.'>Close</button></div>" +
         "<div class='battle-mid updates-body'>" +
         "<article class='update-entry'>" +
+        "<div class='update-entry-head'><h3>Achievements and doors</h3>" +
+        "<span class='update-version'>v1.55.7</span></div>" +
+        "<div class='update-date'>November 16, 2026</div>" +
+        "<ul>" +
+        "<li>Achievements open from the inventory: cards with stars and descriptions.</li>" +
+        "<li>Neighbouring rooms are connected by doors in the shared wall instead of detours.</li>" +
+        "<li>Crypts no longer draw long curved passages across the map.</li>" +
+        "</ul></article>" +
+        "<article class='update-entry'>" +
         "<div class='update-entry-head'><h3>Codex in English</h3>" +
         "<span class='update-version'>v1.55.6</span></div>" +
         "<div class='update-date'>November 16, 2026</div>" +
