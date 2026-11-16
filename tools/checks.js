@@ -8010,6 +8010,25 @@ if (vault) {
     "адаптив: учебный бой не меняет сложность");
   G.tutorial = null;
 
+  // Обучение первого спуска: панель не гаснет после первого шага, а шаги
+  // закрываются событиями игры — движение, сундук, бой, привал, спуск.
+  G.tutorial = { active: true, moves: 0, chest: false, battle: false, camp: false, stairs: false };
+  API.tutorialRender();
+  const tutIds = API.tutorialSteps().map((s) => s.id).join(",");
+  log(tutIds === "move,chest,battle,camp,stairs",
+    "обучение: пять шагов по порядку", tutIds);
+  API.tutorialEvent("move");
+  log(API.tutorialStepDone(G.tutorial, "move") && !API.tutorialStepDone(G.tutorial, "chest"),
+    "обучение: первый шаг закрывается движением");
+  log(G.tutorial.active, "обучение: после первого шага панель остаётся");
+  API.tutorialEvent("chest");
+  API.tutorialEvent("battle");
+  API.tutorialEvent("camp");
+  log(G.tutorial.active, "обучение: до спуска обучение не закрыто");
+  API.tutorialEvent("stairs");
+  log(!G.tutorial.active, "обучение: спуск закрывает обучение");
+  G.tutorial = null;
+
   // 8 ответов, 7 верных — 87,5%: уровень выше.
   G.stats.recentAnswers = [1, 1, 1, 1, 1, 1, 1, 0];
   const high = API.floorLevels();

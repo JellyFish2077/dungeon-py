@@ -637,16 +637,18 @@
 
   <div class="toast" id="toast"></div>
 
-  <!-- Памятка первого спуска: только клавиши, без списка целей.
-       Сюжет и текущая глава живут в HUD и журнале, а не в подсказках. -->
+  <!-- Обучение первого спуска: пять шагов от первого шага до лестницы.
+       Показывается только в первом походе и гаснет, когда шаги пройдены. -->
   <aside class="tutorial-panel hidden" id="tutorial-panel" aria-live="polite"
          aria-label="Управление">
     <header class="tutorial-head">
       <div>
-        <span class="tutorial-kicker">Управление</span>
+        <span class="tutorial-kicker">Первый спуск</span>
+        <span class="tutorial-progress" id="tutorial-progress">0 / 5</span>
       </div>
-      <button class="tutorial-skip" id="tutorial-skip" type="button">Скрыть</button>
+      <button class="tutorial-skip" id="tutorial-skip" type="button">Пропустить</button>
     </header>
+    <ol class="tutorial-steps" id="tutorial-steps"></ol>
     <p class="tutorial-hint" id="tutorial-hint">WASD или стрелки — идти · E — действие · Пробел — пропустить ход.</p>
   </aside>
 

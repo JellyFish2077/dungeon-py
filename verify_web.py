@@ -842,13 +842,18 @@ def run_checks(browser, base):
         " !document.getElementById('tutorial-panel').classList.contains('hidden')",
         timeout=15000)
     tutorial_text = page.locator("#tutorial-panel").inner_text()
-    check("WASD" in tutorial_text and "E" in tutorial_text and
-          page.locator("#tutorial-steps").count() == 0,
-          "первый спуск показывает только управление, без списка целей", tutorial_text)
+    steps = page.locator("#tutorial-steps li").all_inner_texts()
+    check("WASD" in tutorial_text and "E" in tutorial_text and len(steps) == 5,
+          "первый спуск показывает пять шагов обучения",
+          tutorial_text.replace("\n", " | "))
+    check(page.locator("#tutorial-progress").inner_text().strip() == "0 / 5",
+          "обучение начинается с 0 из 5")
+    check(page.locator("#tutorial-steps li.is-current").count() == 1,
+          "в обучении подсвечен ровно один текущий шаг")
     page.click("#tutorial-skip")
     page.wait_for_timeout(250)
     check(not page.locator("#tutorial-panel").is_visible(),
-          "памятку по управлению можно скрыть")
+          "обучение можно пропустить")
     page.click("#menu-btn")
     page.wait_for_timeout(200)
     check(page.locator("#pause-village").is_visible(),

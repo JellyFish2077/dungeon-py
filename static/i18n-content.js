@@ -1357,6 +1357,16 @@
         "data-tip='Close updates. Escape.'>Close</button></div>" +
         "<div class='battle-mid updates-body'>" +
         "<article class='update-entry'>" +
+        "<div class='update-entry-head'><h3>Tutorial on the first descent</h3>" +
+        "<span class='update-version'>v1.55.9</span></div>" +
+        "<div class='update-date'>November 16, 2026</div>" +
+        "<ul>" +
+        "<li>Instead of a one-time note, five steps: move, chest, battle, camp, descent.</li>" +
+        "<li>A step is ticked off when the player really does it; the panel no longer vanishes after the first move.</li>" +
+        "<li>A chest, a campfire and a slime appear near the hero so the tutorial does not send you across the whole map.</li>" +
+        "<li>The tutorial can be skipped at any moment; progress is remembered.</li>" +
+        "</ul></article>" +
+        "<article class='update-entry'>" +
         "<div class='update-entry-head'><h3>English practice</h3>" +
         "<span class='update-version'>v1.55.8</span></div>" +
         "<div class='update-date'>November 16, 2026</div>" +
