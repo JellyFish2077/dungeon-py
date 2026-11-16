@@ -1356,7 +1356,7 @@
       var box = document.getElementById("updates-box");
       if (!box) return;
       var info = window.__PYQUIZ_VERSION;
-      var version = ((info && info.version) || "1.55.5").replace("-web", "");
+      var version = ((info && info.version) || "1.55.6").replace("-web", "");
       box.innerHTML =
         "<div class='battle-head'><div>" +
         "<div class='enemy-name'>Updates</div>" +
@@ -1364,6 +1364,15 @@
         "</div><button class='exit-btn' id='updates-close' type='button' " +
         "data-tip='Close updates. Escape.'>Close</button></div>" +
         "<div class='battle-mid updates-body'>" +
+        "<article class='update-entry'>" +
+        "<div class='update-entry-head'><h3>Codex in English</h3>" +
+        "<span class='update-version'>v1.55.6</span></div>" +
+        "<div class='update-date'>November 16, 2026</div>" +
+        "<ul>" +
+        "<li>Item bonuses in the codex are translated before joining the description.</li>" +
+        "<li>Boss statuses “trophy earned” and “not defeated yet” are translated.</li>" +
+        "<li>The i18n check now fills the codex with all items, mobs and bosses.</li>" +
+        "</ul></article>" +
         "<article class='update-entry'>" +
         "<div class='update-entry-head'><h3>Dungeon.Py</h3>" +
         "<span class='update-version'>v1.55.5</span></div>" +

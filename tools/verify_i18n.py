@@ -101,7 +101,7 @@ def main():
 
             # --- меню ---
             def open_menu():
-                page.goto(base + "/game.html?menu=1&lang=en",
+                page.goto(base + "/game.html?menu=1&lang=en&debug=1",
                           wait_until="domcontentloaded")
                 page.wait_for_function(
                     "() => window.PyMenu && window.PyMenu.isOpen()", timeout=30000)
@@ -121,6 +121,15 @@ def main():
 
             # --- кодекс ---
             open_menu()
+            page.evaluate("""() => {
+                const g = window.__pyquiz;
+                const items = {}, npcs = {}, enemies = {}, bosses = {};
+                (window.ITEM_POOL || []).forEach((i) => { items[i.id] = 1; });
+                (window.VILLAGE_NPCS || []).forEach((n) => { npcs[n.key] = 1; });
+                (window.ENEMY_TYPES || []).forEach((e) => { enemies[e.key] = 1; });
+                Object.keys(window.BOSS_INFO || {}).forEach((k) => { bosses[k] = 1; });
+                g.codex = { items, npcs, enemies, bosses };
+            }""")
             page.locator("button#menu-codex").click()
             page.wait_for_timeout(500)
             for tab in ("controls", "items", "npcs", "mobs", "bosses"):

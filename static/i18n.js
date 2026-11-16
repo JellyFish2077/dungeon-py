@@ -1796,6 +1796,9 @@
     [/^Фазы: (.+)$/, function (m, rest) {
       return "Phases: " + translateString(rest);
     }],
+    [/^(.+) · (трофей получен|ещё не побеждён)$/, function (m, name, state) {
+      return translateString(name) + " · " + translateString(state);
+    }],
     [/^([●○]+) \((\d+) из (\d+)\)$/, function (m, dots, a, b) {
       return dots + " (" + a + " of " + b + ")";
     }],
