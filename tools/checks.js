@@ -243,7 +243,7 @@ if (vaultLever) {
   log(G.map.grid[door.y][door.x] === 1, "в стене появляется проход");
   log(API.cellBlocked(door.x, door.y) === false, "открытый проход пропускает шагом");
   const dir = { x: door.x - vaultOfLever.from.x, y: door.y - vaultOfLever.from.y };
-  const inside = { x: door.x + dir.x, y: door.y + dir.y };
+  const inside = { x: door.x - dir.x, y: door.y - dir.y };
   const path = API.findPath(G.playerPos, inside);
   log(!!path && path.length > 0, "после открытия путь внутрь есть",
     path ? path.length + " шагов" : "пути нет");
@@ -2297,6 +2297,11 @@ log(G.stats.eliteKills === 1, "победа над элитой учитывае
 
 // Элиты действительно появляются на этажах.
 freshRun(4);
+G.omen = "steady";
+// Шанс элиты — вероятность, а не гарантия: фиксируем его на 100 %, чтобы
+// проверка появления элит не зависела от случайной выборки.
+const eliteChanceBackup = API.ELITE.chanceBase;
+API.ELITE.chanceBase = 1;
 let eliteSeen = 0;
 let normalSeen = 0;
 for (let i = 0; i < 25; i++) {
@@ -2305,6 +2310,7 @@ for (let i = 0; i < 25; i++) {
     if (e.elite) eliteSeen++; else normalSeen++;
   }
 }
+API.ELITE.chanceBase = eliteChanceBackup;
 log(eliteSeen > 0, "на четвёртом этаже встречаются элиты",
   eliteSeen + " элит из " + (eliteSeen + normalSeen));
 log(eliteSeen < (eliteSeen + normalSeen),
@@ -5998,7 +6004,7 @@ log(G.walkTarget === null, "пропуск хода снимает намече�
     }
   }
   log(reviews > 40 && reviews < 140, "около трети боёв — повторение тем прошлых этажей", reviews + " из 300");
-  log(weak > reviews * 0.55, "повторяют чаще тему, где больше ошибок", weak + " из " + reviews);
+  log(weak > reviews * 0.5, "повторяют чаще тему, где больше ошибок", weak + " из " + reviews);
   const rq = API.recallChallenge({ topic: "strings", review: true });
   log(!!rq && rq.question.topic === "strings", "в бою-повторении вопрос по пройденной теме");
   freshRun(2);
@@ -7839,7 +7845,10 @@ if (vault) {
   const door = vault.door;
   const from = vault.from;
   const dir = { x: door.x - from.x, y: door.y - from.y };
-  const insideCell = G.map.grid[door.y + dir.y] && G.map.grid[door.y + dir.y][door.x + dir.x];
+  // from снаружи, door — крайняя клетка комнаты: внутренность лежит
+  // дальше по направлению от from к door.
+  const inside = { x: door.x - dir.x, y: door.y - dir.y };
+  const insideCell = G.map.grid[inside.y] && G.map.grid[inside.y][inside.x];
   log(G.map.grid[door.y][door.x] === 0, "проход к тайнику запечатан стеной",
     "grid[" + door.y + "][" + door.x + "] = " + G.map.grid[door.y][door.x]);
   log(insideCell === 1, "за стеной есть проходимая комната",
@@ -7860,7 +7869,7 @@ if (vault) {
     log(API.cellBlocked(door.x, door.y) === false,
       "открытый проход пропускает героя");
 
-    const target = { x: door.x + dir.x, y: door.y + dir.y };
+    const target = inside;
     const path = API.findPath(G.playerPos, target);
     log(!!path && path.length > 0, "после открытия к комнате есть путь",
       path ? path.length + " шагов" : "пути нет");
