@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Запуск одиночной PyDungeon: статический сервер + браузер.
+"""Запуск одиночной Dungeon.Py: статический сервер + браузер.
 
-Двойной клик по ярлыку PyDungeon. Классный server.py здесь не нужен:
+Двойной клик по ярлыку Dungeon.Py. Классный server.py здесь не нужен:
 игра работает в браузере, профиль локальный, код проверяет Pyodide.
 
 Если сборки ещё нет — она создаётся автоматически. Pyodide при первой
@@ -43,7 +43,7 @@ def looks_like_game(port):
             "http://127.0.0.1:%d/index.html" % port, timeout=0.4
         ) as resp:
             head = resp.read(800).decode("utf-8", "replace")
-        return "PyDungeon" in head
+        return "Dungeon.Py" in head
     except Exception:
         return False
 
@@ -124,7 +124,7 @@ def open_game(url, windowed=False):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Запустить одиночную PyDungeon")
+    parser = argparse.ArgumentParser(description="Запустить одиночную Dungeon.Py")
     parser.add_argument("--no-browser", action="store_true", help="не открывать браузер")
     parser.add_argument("--windowed", action="store_true", help="обычное окно, без fullscreen")
     parser.add_argument("--port", type=int, default=None, help="порт (по умолчанию 8080+)")
@@ -145,7 +145,7 @@ def main():
     port = args.port or free_port()
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
-    print("Запускаю одиночную PyDungeon на http://127.0.0.1:%d/index.html" % port)
+    print("Запускаю одиночную Dungeon.Py на http://127.0.0.1:%d/index.html" % port)
     print("Остановка: Ctrl+C в этом окне.")
     print()
     proc = subprocess.Popen(

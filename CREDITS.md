@@ -2,7 +2,7 @@
 
 ## Код и тексты
 
-PyDungeon — MIT License, см. [LICENSE](LICENSE).
+Dungeon.Py — MIT License, см. [LICENSE](LICENSE).
 Автор направления, редактуры и финальных решений — JellyFish2077.
 Код, тексты и часть идей созданы при участии ИИ.
 

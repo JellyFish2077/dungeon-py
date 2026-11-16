@@ -1,5 +1,5 @@
 {
-  "about": "Вертикальный срез графики PyDungeon. Источник — .aseprite в tools/art/aseprite; сборка — python tools/art/export_aseprite.py && python tools/art/build_art.py",
+  "about": "Вертикальный срез графики Dungeon.Py. Источник — .aseprite в tools/art/aseprite; сборка — python tools/art/export_aseprite.py && python tools/art/build_art.py",
   "style": "тёмное фэнтези, 32x32, контур #05070d, свет сверху-слева, ограниченная палитра",
   "style_guide": "tools/art/STYLE.md",
   "palette": "tools/art/palette.gpl",

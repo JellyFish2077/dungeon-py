@@ -44,7 +44,7 @@ def find_archive():
     def version_key(path):
         return tuple(int(part) for part in re.findall(r"\d+", path.stem))
 
-    archives = sorted((ROOT / "dist").glob("pydungeon-standalone-*.zip"), key=version_key)
+    archives = sorted((ROOT / "dist").glob("dungeonpy-standalone-*.zip"), key=version_key)
     if not archives:
         raise SystemExit("в dist/ нет архива: сначала python tools/package_web.py")
     return archives[-1]
@@ -74,7 +74,7 @@ def main():
 
     zip_path = find_archive()
     print("архив: %s (%.1f МБ)" % (zip_path, zip_path.stat().st_size / 1024 / 1024))
-    target = Path(tempfile.mkdtemp(prefix="pydungeon-zip-"))
+    target = Path(tempfile.mkdtemp(prefix="dungeonpy-zip-"))
     passed = True
     try:
         names = unpack(zip_path, target)

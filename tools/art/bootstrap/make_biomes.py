@@ -1,4 +1,4 @@
-"""Biome tile batch for the PyDungeon art slice.
+"""Biome tile batch for the Dungeon.Py art slice.
 
 Replaces the remaining dungeon floors 02–10 with 32x32 wall and floor tiles:
 mossy caves, catacombs, sunken crypts, ice, deep ice, demon realm, infernal

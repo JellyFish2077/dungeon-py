@@ -151,7 +151,7 @@ HTML = """<!doctype html>
   <div class="grain"></div>
 
   <div class="brand">
-    <h1>Py<span>Dungeon</span></h1>
+    <h1>Dungeon<span>.Py</span></h1>
   </div>
 
   <div class="dragon-glow"></div>

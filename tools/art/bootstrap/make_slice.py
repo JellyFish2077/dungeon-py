@@ -1,4 +1,4 @@
-"""Starter art for the PyDungeon vertical slice.
+"""Starter art for the Dungeon.Py vertical slice.
 
 One-time bootstrap: writes editable `.aseprite` sources into
 `tools/art/aseprite/` and the shared palette `tools/art/palette.gpl`.
@@ -988,7 +988,7 @@ def lua_script(groups: dict[str, list[tuple[str, Image.Image]]]) -> str:
 
 def write_palette_gpl(path: str) -> None:
     with open(path, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write("GIMP Palette\nName: PyDungeon\nColumns: 8\n#\n")
+        fh.write("GIMP Palette\nName: Dungeon.Py\nColumns: 8\n#\n")
         for ch, hex_color in PALETTE.items():
             if not hex_color:
                 continue
@@ -999,7 +999,7 @@ def write_palette_gpl(path: str) -> None:
 def write_manifest(groups: dict[str, list[tuple[str, Image.Image]]], path: str,
                    dest_map: dict[str, str] | None = None) -> None:
     data = {
-        "about": "Вертикальный срез графики PyDungeon. Источник — .aseprite в tools/art/aseprite; сборка — python tools/art/export_aseprite.py && python tools/art/build_art.py",
+        "about": "Вертикальный срез графики Dungeon.Py. Источник — .aseprite в tools/art/aseprite; сборка — python tools/art/export_aseprite.py && python tools/art/build_art.py",
         "style": "тёмное фэнтези, 32x32, контур #05070d, свет сверху-слева, ограниченная палитра",
         "style_guide": "tools/art/STYLE.md",
         "palette": "tools/art/palette.gpl",

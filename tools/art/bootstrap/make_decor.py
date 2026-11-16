@@ -1,4 +1,4 @@
-"""Decor batch for the PyDungeon art slice.
+"""Decor batch for the Dungeon.Py art slice.
 
 Grass, moss, bones, crystals, rubble and the three object-decor pieces:
 the well/lamp, wooden pikes and the campfire. These are drawn as separate

@@ -1,4 +1,4 @@
-# PyDungeon on Itch.io
+# Dungeon.Py on Itch.io
 
 Store-page copy and assets for the **main (English) page**. The game ships as
 **HTML5**: no install, no server, no account.
@@ -10,9 +10,9 @@ in `assets/itch/screenshots/`.
 
 ## Card
 
-- **Title:** PyDungeon
+- **Title:** Dungeon.Py
 - **Short description:** A dungeon game where every battle is a Python question. 15 floors, 5 bosses, one dragon. Browser, no server.
-- **Version:** 1.55.4
+- **Version:** 1.55.5
 - **Status:** In development (early access)
 - **Price:** free (voluntary donations optional)
 - **Genre:** RPG / Roguelike / Educational
@@ -27,7 +27,7 @@ in `assets/itch/screenshots/`.
 
 ## Store description
 
-**PyDungeon** is a small dungeon game where you fight with Python knowledge.
+**Dungeon.Py** is a small dungeon game where you fight with Python knowledge.
 Each battle asks one Python question. Answer correctly and you hit the
 monster. Make a mistake and it hits you.
 
@@ -79,6 +79,11 @@ where the difficulty spikes — to improve and develop the concept. Comments on
 the itch page or [GitHub issues](https://github.com/JellyFish2077/Dungeon-of-Python/issues)
 are equally welcome.
 
+### Support the project
+
+Dungeon.Py is free and stays free. If you want to help with development, you
+can support it on Boosty: https://boosty.to/YOUR_PAGE
+
 ### What's inside
 
 - The “Seals of the Deep” campaign: five chapters, a journal, quests and a finale.
@@ -125,11 +130,11 @@ and Python code is checked by Pyodide right in the browser.
 
 ## Upload assets
 
-- Archive: `dist/pydungeon-standalone-1.55.4.zip` (contains `LICENSE` and `CREDITS.md`)
+- Archive: `dist/dungeonpy-standalone-1.55.5.zip` (contains `LICENSE` and `CREDITS.md`)
 - Cover: `assets/itch/cover-630x500-en.png` — `python tools/make_itch_cover.py --lang en`
   (background and dragon sprite come from the build)
-- Icon: `assets/logo/PyDungeon-icon-512.png` — for the Boosty/social avatar;
-  the browser favicon and desktop `assets/PyDungeon.ico` already use it
+- Icon: `assets/logo/DungeonPy-icon-512.png` — for the Boosty/social avatar;
+  the browser favicon and desktop `assets/DungeonPy.ico` already use it
 - Page background: `assets/itch/background-1920x1080.png` (or
   `background-2560x1440.png`) — `python tools/make_itch_background.py`
 - Screenshots, 1280×800, captured from the build:

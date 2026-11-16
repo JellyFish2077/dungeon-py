@@ -246,7 +246,7 @@ def run_scenarios(browser, base):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Сценарные E2E-проверки PyDungeon")
+    ap = argparse.ArgumentParser(description="Сценарные E2E-проверки Dungeon.Py")
     ap.add_argument("--browser", default="chromium",
                     choices=["chromium", "msedge", "edge", "firefox", "ff",
                              "webkit", "safari"])

@@ -5,7 +5,7 @@
     python tools/fetch_pyodide.py     # офлайн-вариант
     python tools/package_web.py
 
-Архив: dist/pydungeon-standalone-<версия>.zip, index.html в корне.
+Архив: dist/dungeonpy-standalone-<версия>.zip, index.html в корне.
 """
 import hashlib
 import pathlib
@@ -45,7 +45,7 @@ def main():
         return 1
 
     DIST.mkdir(exist_ok=True)
-    target = DIST / ("pydungeon-standalone-%s.zip" % version())
+    target = DIST / ("dungeonpy-standalone-%s.zip" % version())
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
         for path in sorted(PUBLIC.rglob("*")):
             if path.is_file():

@@ -402,7 +402,7 @@ function render(): void {
   const errors = validate();
   root.innerHTML = `<header class="topbar">
     <div>
-      <p class="eyebrow">PyDungeon · инструменты</p>
+      <p class="eyebrow">Dungeon.Py · инструменты</p>
       <h1>Редактор деревни</h1>
       <p class="subtitle">Источник: <code>static/village-content.js</code> · ${state.width}×${state.height}</p>
     </div>

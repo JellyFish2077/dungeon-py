@@ -1,4 +1,4 @@
-/* PyDungeon — английские тексты контента.
+/* Dungeon.Py — английские тексты контента.
  *
  * Подключается после файлов с данными и до game.js. Английский текст
  * подменяет поля в тех же объектах, поэтому игровая логика, тултипы,
@@ -1356,7 +1356,7 @@
       var box = document.getElementById("updates-box");
       if (!box) return;
       var info = window.__PYQUIZ_VERSION;
-      var version = ((info && info.version) || "1.55.4").replace("-web", "");
+      var version = ((info && info.version) || "1.55.5").replace("-web", "");
       box.innerHTML =
         "<div class='battle-head'><div>" +
         "<div class='enemy-name'>Updates</div>" +
@@ -1364,6 +1364,15 @@
         "</div><button class='exit-btn' id='updates-close' type='button' " +
         "data-tip='Close updates. Escape.'>Close</button></div>" +
         "<div class='battle-mid updates-body'>" +
+        "<article class='update-entry'>" +
+        "<div class='update-entry-head'><h3>Dungeon.Py</h3>" +
+        "<span class='update-version'>v1.55.5</span></div>" +
+        "<div class='update-date'>November 16, 2026</div>" +
+        "<ul>" +
+        "<li>The project is now called Dungeon.Py: menu, titles, texts and save export.</li>" +
+        "<li>Cover and icons are updated; .Py is highlighted in the name.</li>" +
+        "<li>Internal save keys are unchanged, so old saves keep working.</li>" +
+        "</ul></article>" +
         "<article class='update-entry'>" +
         "<div class='update-entry-head'><h3>Boss, descent and doors</h3>" +
         "<span class='update-version'>v1.55.4</span></div>" +

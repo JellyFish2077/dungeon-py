@@ -1,4 +1,4 @@
-# PyDungeon — полевой журнал
+# Dungeon.Py — полевой журнал
 
 Визуальный язык публичной версии. Не «тёмное фэнтези вообще», а архив
 экспедиции: папка дела, полевые заметки, описи, печати и карты.
@@ -144,7 +144,7 @@
 
 - `static/game.html` — игра; при сборке она же становится `index.html`.
 - `assets/itch/cover-630x500.png` — обложка (русская); английская — `cover-630x500-en.png`.
-- `assets/logo/PyDungeon-icon*.png`, `assets/PyDungeon.ico` — логотип-иконка; `static/favicon.svg` — иконка вкладки.
+- `assets/logo/DungeonPy-icon*.png`, `assets/DungeonPy.ico` — логотип-иконка; `static/favicon.svg` — иконка вкладки.
 - `assets/itch/screenshots/` — скриншоты для страницы Itch; английские — с суффиксом `-en`.
 - `assets/itch/background-*.png` — коллаж для фона страницы Itch.
 - `static/fonts/` — Golos Text и Handjet + OFL.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Smoke-проверка публичной веб-сборки PyDungeon в настоящем браузере.
+"""Smoke-проверка публичной веб-сборки Dungeon.Py в настоящем браузере.
 
 Проверяется то, чего не видят node-проверки и серверные тесты:
   * стартовый экран и переход в игру;
@@ -168,7 +168,7 @@ TASK_ID = "attack_power"
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Smoke-проверка веб-сборки PyDungeon")
+    ap = argparse.ArgumentParser(description="Smoke-проверка веб-сборки Dungeon.Py")
     ap.add_argument("--browser", default="chromium",
                     choices=["chromium", "msedge", "edge", "firefox", "ff",
                              "webkit", "safari"],
@@ -481,7 +481,7 @@ def run_checks(browser, base):
     page.goto(base + "/", wait_until="domcontentloaded")
     page.wait_for_function(
         "() => window.PyMenu && window.PyMenu.isOpen()", timeout=15000)
-    check("PyDungeon" in page.title(), "корень сайта открывает игру", page.title())
+    check("Dungeon.Py" in page.title(), "корень сайта открывает игру", page.title())
     check(page.locator("#menu-overlay").is_visible(),
           "главное меню открыто сразу, без лендинга")
     labels = page.locator("#menu-list .menu-item:visible .menu-item-label").all_inner_texts()

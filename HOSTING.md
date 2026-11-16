@@ -1,4 +1,4 @@
-# Публикация PyDungeon
+# Публикация Dungeon.Py
 
 Публичная версия — это статическая игра из `standalone/build/`. Сервер,
 аккаунты и база данных для неё не нужны: профиль и сохранения лежат в
@@ -58,7 +58,7 @@ Actions недоступны.
 python tools/package_web.py
 ```
 
-Архив `dist/pydungeon-standalone-*.zip` загружается как HTML-игра. В корне
+Архив `dist/dungeonpy-standalone-*.zip` загружается как HTML-игра. В корне
 архива — `index.html`, все пути относительные. Размер сборки с локальным
 Pyodide — около 15 МБ.
 

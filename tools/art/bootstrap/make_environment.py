@@ -1,4 +1,4 @@
-"""Environment batch for the PyDungeon art slice.
+"""Environment batch for the Dungeon.Py art slice.
 
 Generates editable Aseprite sources for water, lava, stairs, traps and doors.
 These are the pieces that clashed most with the new floor-1 stonework: the

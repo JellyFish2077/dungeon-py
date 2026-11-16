@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Логотип-иконка PyDungeon: монитор с Python-приглашением.
+"""Логотип-иконка Dungeon.Py: монитор с Python-приглашением.
 
     python tools/make_logo.py
 
-Источник — assets/logo/PyDungeon-icon.svg (пиксельная сетка 32×32).
+Источник — assets/logo/DungeonPy-icon.svg (пиксельная сетка 32×32).
 Скрипт рендерит мастер 1024×1024, PNG-размеры и многомасштабный
-assets/PyDungeon.ico для ярлыка на рабочем столе.
+assets/DungeonPy.ico для ярлыка на рабочем столе.
 """
 import sys
 from pathlib import Path
@@ -18,8 +18,8 @@ sys.path.insert(0, str(ROOT))
 import verify_web  # noqa: E402
 
 LOGO = ROOT / "assets" / "logo"
-SRC = LOGO / "PyDungeon-icon.svg"
-ICO = ROOT / "assets" / "PyDungeon.ico"
+SRC = LOGO / "DungeonPy-icon.svg"
+ICO = ROOT / "assets" / "DungeonPy.ico"
 VIEW = 1024
 
 
@@ -72,22 +72,22 @@ def preview(master: Image.Image) -> None:
 def main() -> int:
     LOGO.mkdir(parents=True, exist_ok=True)
     master = render_master()
-    master.save(LOGO / "PyDungeon-icon-1024.png", optimize=True)
+    master.save(LOGO / "DungeonPy-icon-1024.png", optimize=True)
     for size in (512, 256):
         master.resize((size, size), Image.Resampling.LANCZOS).save(
-            LOGO / ("PyDungeon-icon-%d.png" % size), optimize=True
+            LOGO / ("DungeonPy-icon-%d.png" % size), optimize=True
         )
 
     base = master.resize((256, 256), Image.Resampling.LANCZOS)
     sizes = [(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
     base.save(ICO, format="ICO", sizes=sizes)
-    (LOGO / "PyDungeon-icon.ico").write_bytes(ICO.read_bytes())
+    (LOGO / "DungeonPy-icon.ico").write_bytes(ICO.read_bytes())
 
     preview(master)
     for path in (
-        LOGO / "PyDungeon-icon-1024.png",
-        LOGO / "PyDungeon-icon-512.png",
-        LOGO / "PyDungeon-icon-256.png",
+        LOGO / "DungeonPy-icon-1024.png",
+        LOGO / "DungeonPy-icon-512.png",
+        LOGO / "DungeonPy-icon-256.png",
         ICO,
         LOGO / "preview.png",
     ):

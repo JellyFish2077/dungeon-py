@@ -1,4 +1,4 @@
-"""Village batch for the PyDungeon art slice.
+"""Village batch for the Dungeon.Py art slice.
 
 House wall and window, twelve roof tiles (four colours × ridge/slope/eave),
 the four yard objects and one villager base that build_art recolours into

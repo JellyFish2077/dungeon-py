@@ -1,4 +1,4 @@
--- PyDungeon UI kit: carved stone + ember brass.
+-- Dungeon.Py UI kit: carved stone + ember brass.
 -- Run: aseprite --batch --script art/ui/make_ui.lua
 -- Sources are saved next to the preview PNGs; the runtime copies live in static/ui.
 

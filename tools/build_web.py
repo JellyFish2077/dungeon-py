@@ -150,7 +150,7 @@ def main():
         shutil.copytree(ui_assets, PUBLIC / "static" / "ui")
 
     (PUBLIC / "ITCH.txt").write_text(
-        "PyDungeon — веб-сборка.\n"
+        "Dungeon.Py — веб-сборка.\n"
         "Загрузите содержимое этой папки как HTML-игру Itch.io.\n"
         "Профили и сохранения локальные (localStorage), сервер не нужен.\n"
         "Python-код проверяется через Pyodide.\n"
