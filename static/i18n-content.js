@@ -1356,7 +1356,7 @@
       var box = document.getElementById("updates-box");
       if (!box) return;
       var info = window.__PYQUIZ_VERSION;
-      var version = ((info && info.version) || "1.55.3").replace("-web", "");
+      var version = ((info && info.version) || "1.55.4").replace("-web", "");
       box.innerHTML =
         "<div class='battle-head'><div>" +
         "<div class='enemy-name'>Updates</div>" +
@@ -1364,6 +1364,16 @@
         "</div><button class='exit-btn' id='updates-close' type='button' " +
         "data-tip='Close updates. Escape.'>Close</button></div>" +
         "<div class='battle-mid updates-body'>" +
+        "<article class='update-entry'>" +
+        "<div class='update-entry-head'><h3>Boss, descent and doors</h3>" +
+        "<span class='update-version'>v1.55.4</span></div>" +
+        "<div class='update-date'>November 16, 2026</div>" +
+        "<ul>" +
+        "<li>In phase two the boss now alternates summons with normal attacks.</li>" +
+        "<li>The descent opens as soon as the boss dies, even if other monsters remain.</li>" +
+        "<li>Nearby rooms are more often connected by a short door.</li>" +
+        "<li>Added regression checks for the boss and the stairs.</li>" +
+        "</ul></article>" +
         "<article class='update-entry'>" +
         "<div class='update-entry-head'><h3>English version: translation complete</h3>" +
         "<span class='update-version'>v1.55.3</span></div>" +

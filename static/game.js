@@ -2021,7 +2021,8 @@
   }
 
   // Дополнительные связи между близкими комнатами: каждая подходящая пара
-  // получает шанс ≈30 %, а не фиксированное число петель. Ветка с веткой
+  // получает шанс чуть выше половины, чтобы соседние комнаты чаще соединял
+  // короткий дверной проём, а не обход через хребет. Ветка с веткой
   // напрямую не соединяется, иначе лабиринт теряет читаемый хребет.
   function genV3AddExtraConnections(plan, rng) {
     const rooms = plan.rooms || [];
@@ -2042,11 +2043,11 @@
       }
     }
     if (!candidates.length) return;
-    const cap = 2 + (plan.biome === "caves" ? 1 : 0);
+    const cap = 3 + (plan.biome === "caves" ? 1 : 0);
     let added = 0;
     genShuffle(rng, candidates).forEach((pair) => {
       if (added >= cap) return;
-      if (rng() >= 0.30) return;
+      if (rng() >= 0.70) return;
       plan.edges.push({ a: pair.a, b: pair.b, kind: "loop" });
       added += 1;
     });
@@ -13848,18 +13849,32 @@
     if (bagOnPlayer) pickupLootBag(bag);
 
     // Страж лестницы повержен — спуск открыт.
+    let bossOpenedStairs = false;
     if (e.guard && G.stairsDown && !G.stairsDown.active) {
       G.stairsDown.active = true;
       log("Страж лестницы повержен — путь вниз открыт.", "fight");
       toast("Лестница вниз открыта");
     }
 
+    // Босс — ключ от спуска: оставшиеся на арене мобы больше не держат
+    // лестницу. Раньше после убийства вожака игрок видел «Выход охраняет
+    // гоблин-вожак», пока не зачищал весь этаж.
+    const bossFloor = floorDef(G.floorIndex);
+    if (e.boss && G.stairsDown && !G.stairsDown.active) {
+      G.stairsDown.active = true;
+      bossOpenedStairs = true;
+      log((bossFloor.bossName || e.name) + " повержен — путь вниз открыт.", "fight");
+      toast("Лестница вниз открыта");
+    }
+
     if (G.enemies.length === 0) {
       G.stairsDown.active = true;
-      if (floorDef(G.floorIndex).finalBoss && !runIsEndless()) {
+      if (bossOpenedStairs) {
+        // Сообщение уже показано выше.
+      } else if (bossFloor.finalBoss && !runIsEndless()) {
         log("Дракон повержен! Выход из подземелья открыт.", "fight");
-      } else if (floorDef(G.floorIndex).boss) {
-        log((floorDef(G.floorIndex).bossName || "Босс") + " повержен! Путь глубже открыт.", "fight");
+      } else if (bossFloor.boss) {
+        log((bossFloor.bossName || "Босс") + " повержен! Путь глубже открыт.", "fight");
       } else {
         log("Этаж зачищен!", "fight");
       }
@@ -15423,7 +15438,18 @@
     if (share < 0.45 && (ab === "regen" || ab === "heal" || ab === "drain") &&
         Math.random() < 0.55) return "heal";
     if (share < 0.3 && Math.random() < 0.25) return "defend";
-    if (ab && Math.random() < 0.45) return "special";
+    // Призыв слуг не должен съедать каждый ход босса: иначе вторая фаза
+    // превращается в бесконечную подмогу, а игрок не получает ответных
+    // ударов. После призыва босс минимум два хода бьёт сам.
+    if (ab === "summon") {
+      e.summonCd = Math.max(0, (e.summonCd || 0) - 1);
+      if (e.summonCd > 0) return Math.random() < 0.08 ? "defend" : "attack";
+    }
+    const specialChance = e.boss ? 0.35 : 0.45;
+    if (ab && Math.random() < specialChance) {
+      if (ab === "summon") e.summonCd = 2;
+      return "special";
+    }
     if (share < 0.55 && Math.random() < 0.15) return "defend";
     return Math.random() < 0.08 ? "defend" : "attack";
   }
@@ -17473,6 +17499,17 @@ function topicName(key) {
   // ---------- Обновления ----------
   // Короткая лента новостей для главного меню. Новые записи — сверху.
   const UPDATES = [
+    {
+      version: "1.55.4",
+      date: "16 ноября 2026",
+      title: "Босс, спуск и двери между комнатами",
+      items: [
+        "Во второй фазе босс чередует призыв слуг с обычными атаками.",
+        "Спуск открывается сразу после смерти босса, даже если на этаже остались мобы.",
+        "Соседние комнаты чаще соединяются коротким дверным проёмом.",
+        "Добавлены регрессионные проверки босса и лестницы."
+      ]
+    },
     {
       version: "1.55.3",
       date: "14 ноября 2026",

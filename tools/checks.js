@@ -9168,6 +9168,45 @@ log(missBadge.side === "enemy" && missBadge.icon === "miss" &&
     "v2: удар ниже 35% открывает третью фазу", "фаза " + thresholdBoss.bossPhase);
   API.continueBattle();
   log(G.battle === null, "v2: третья фаза тоже возвращает на карту");
+
+  // Вторая фаза не должна превращаться в бесконечный призыв слуг: после
+  // призыва босс обязан бить сам, иначе игрок не получает ответных ударов.
+  API.setCampaign(2);
+  freshRun(2);
+  const summonBoss = G.enemies.find((e) => e.boss);
+  API.startBossPhase(summonBoss, 2);
+  let summonSpecials = 0;
+  let summonAttacks = 0;
+  let summonRepeats = 0;
+  let lastAction = "";
+  for (let i = 0; i < 120; i += 1) {
+    const action = API.chooseEnemyAction(summonBoss, G.battle || {});
+    if (action === "attack") summonAttacks += 1;
+    if (action === "special") {
+      summonSpecials += 1;
+      if (lastAction === "special") summonRepeats += 1;
+    }
+    lastAction = action;
+  }
+  log(summonAttacks > summonSpecials && summonRepeats === 0,
+    "вторая фаза босса чередует призыв с атаками",
+    "атак: " + summonAttacks + ", призывов: " + summonSpecials);
+
+  // Босс — ключ от спуска: оставшиеся мобы не должны держать лестницу.
+  freshRun(2);
+  const stairBoss = G.enemies.find((e) => e.boss);
+  const extraMob = API.makeEnemy("slime", 2);
+  extraMob.x = G.playerPos.x + 2;
+  extraMob.y = G.playerPos.y;
+  G.enemies.push(extraMob);
+  G.stairsDown.active = false;
+  G.battle = null;
+  API.defeatEnemy(stairBoss);
+  log(G.stairsDown.active && G.enemies.some((e) => e.hp > 0),
+    "после смерти босса спуск открыт, даже если на этаже остались мобы",
+    "активна: " + G.stairsDown.active + ", живых: " +
+      G.enemies.filter((e) => e.hp > 0).length);
+
   // Регенерация босса не должна перекрывать урон: иначе третья фаза голема
   // лечится быстрее, чем герой бьёт, и бой никогда не заканчивается.
   API.setCampaign(1);

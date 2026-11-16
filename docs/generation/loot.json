@@ -1,0 +1,626 @@
+[
+  {
+    "difficulty": "easy",
+    "runs": 400,
+    "enemyCountPerRun": 15.51,
+    "elitePerRun": 0.81,
+    "guardPerRun": 2,
+    "bossPerRun": 1,
+    "avgEnemyHp": 57.4,
+    "avgEnemyDmg": 9.34,
+    "itemsPerRun": 13.28,
+    "chestItemsPerRun": 7.03,
+    "dropItemsPerRun": 6.25,
+    "amuletsPerRun": 0.145,
+    "enemies": {
+      "skeleton": 1094,
+      "bat": 1071,
+      "goblin": 1416,
+      "orc": 540,
+      "slime": 1042,
+      "rat": 1041
+    },
+    "items": [
+      {
+        "name": "Короткий клинок",
+        "rarity": "uncommon",
+        "slot": "weapon",
+        "perRun": 1.173,
+        "chestPerRun": 0.365,
+        "dropPerRun": 0.807
+      },
+      {
+        "name": "Талисман удачи",
+        "rarity": "rare",
+        "slot": "accessory",
+        "perRun": 0.892,
+        "chestPerRun": 0.235,
+        "dropPerRun": 0.657
+      },
+      {
+        "name": "Костяной кинжал",
+        "rarity": "uncommon",
+        "slot": "weapon",
+        "perRun": 0.705,
+        "chestPerRun": 0.42,
+        "dropPerRun": 0.285
+      },
+      {
+        "name": "Круглый щит",
+        "rarity": "uncommon",
+        "slot": "shield",
+        "perRun": 0.652,
+        "chestPerRun": 0.355,
+        "dropPerRun": 0.297
+      },
+      {
+        "name": "Ржавый меч",
+        "rarity": "common",
+        "slot": "weapon",
+        "perRun": 0.647,
+        "chestPerRun": 0.367,
+        "dropPerRun": 0.28
+      },
+      {
+        "name": "Роба послушника",
+        "rarity": "common",
+        "slot": "armor",
+        "perRun": 0.632,
+        "chestPerRun": 0.34,
+        "dropPerRun": 0.292
+      },
+      {
+        "name": "Оберег стража",
+        "rarity": "uncommon",
+        "slot": "accessory",
+        "perRun": 0.62,
+        "chestPerRun": 0.333,
+        "dropPerRun": 0.287
+      },
+      {
+        "name": "Большое зелье",
+        "rarity": "uncommon",
+        "slot": "potion",
+        "perRun": 0.615,
+        "chestPerRun": 0.328,
+        "dropPerRun": 0.287
+      },
+      {
+        "name": "Перстень силы",
+        "rarity": "uncommon",
+        "slot": "accessory",
+        "perRun": 0.608,
+        "chestPerRun": 0.302,
+        "dropPerRun": 0.305
+      },
+      {
+        "name": "Амулет казначея",
+        "rarity": "uncommon",
+        "slot": "accessory",
+        "perRun": 0.605,
+        "chestPerRun": 0.313,
+        "dropPerRun": 0.292
+      },
+      {
+        "name": "Деревянный щит",
+        "rarity": "common",
+        "slot": "shield",
+        "perRun": 0.585,
+        "chestPerRun": 0.307,
+        "dropPerRun": 0.278
+      },
+      {
+        "name": "Противоядие",
+        "rarity": "uncommon",
+        "slot": "potion",
+        "perRun": 0.575,
+        "chestPerRun": 0.302,
+        "dropPerRun": 0.273
+      },
+      {
+        "name": "Малое зелье",
+        "rarity": "common",
+        "slot": "potion",
+        "perRun": 0.575,
+        "chestPerRun": 0.32,
+        "dropPerRun": 0.255
+      },
+      {
+        "name": "Кожаный доспех",
+        "rarity": "uncommon",
+        "slot": "armor",
+        "perRun": 0.573,
+        "chestPerRun": 0.347,
+        "dropPerRun": 0.225
+      },
+      {
+        "name": "Стальной клинок",
+        "rarity": "rare",
+        "slot": "weapon",
+        "perRun": 0.468,
+        "chestPerRun": 0.305,
+        "dropPerRun": 0.163
+      },
+      {
+        "name": "Шипастый щит",
+        "rarity": "rare",
+        "slot": "shield",
+        "perRun": 0.448,
+        "chestPerRun": 0.278,
+        "dropPerRun": 0.17
+      },
+      {
+        "name": "Эликсир зари",
+        "rarity": "rare",
+        "slot": "potion",
+        "perRun": 0.445,
+        "chestPerRun": 0.237,
+        "dropPerRun": 0.207
+      },
+      {
+        "name": "Трезубец точности",
+        "rarity": "rare",
+        "slot": "weapon",
+        "perRun": 0.427,
+        "chestPerRun": 0.273,
+        "dropPerRun": 0.155
+      },
+      {
+        "name": "Стальной щит",
+        "rarity": "rare",
+        "slot": "shield",
+        "perRun": 0.425,
+        "chestPerRun": 0.268,
+        "dropPerRun": 0.158
+      },
+      {
+        "name": "Кольчуга",
+        "rarity": "rare",
+        "slot": "armor",
+        "perRun": 0.415,
+        "chestPerRun": 0.253,
+        "dropPerRun": 0.163
+      },
+      {
+        "name": "Линза следопыта",
+        "rarity": "rare",
+        "slot": "accessory",
+        "perRun": 0.407,
+        "chestPerRun": 0.265,
+        "dropPerRun": 0.142
+      },
+      {
+        "name": "Свиток подсказки",
+        "rarity": "rare",
+        "slot": "potion",
+        "perRun": 0.405,
+        "chestPerRun": 0.282,
+        "dropPerRun": 0.122
+      },
+      {
+        "name": "Клинок-пиявка",
+        "rarity": "rare",
+        "slot": "weapon",
+        "perRun": 0.383,
+        "chestPerRun": 0.237,
+        "dropPerRun": 0.145
+      }
+    ]
+  },
+  {
+    "difficulty": "normal",
+    "runs": 400,
+    "enemyCountPerRun": 15.48,
+    "elitePerRun": 0.81,
+    "guardPerRun": 2,
+    "bossPerRun": 1,
+    "avgEnemyHp": 67.6,
+    "avgEnemyDmg": 10.99,
+    "itemsPerRun": 13.38,
+    "chestItemsPerRun": 7.02,
+    "dropItemsPerRun": 6.37,
+    "amuletsPerRun": 0.16,
+    "enemies": {
+      "bat": 1034,
+      "skeleton": 1046,
+      "slime": 1033,
+      "orc": 575,
+      "goblin": 1433,
+      "rat": 1070
+    },
+    "items": [
+      {
+        "name": "Короткий клинок",
+        "rarity": "uncommon",
+        "slot": "weapon",
+        "perRun": 1.093,
+        "chestPerRun": 0.378,
+        "dropPerRun": 0.715
+      },
+      {
+        "name": "Талисман удачи",
+        "rarity": "rare",
+        "slot": "accessory",
+        "perRun": 0.922,
+        "chestPerRun": 0.225,
+        "dropPerRun": 0.698
+      },
+      {
+        "name": "Противоядие",
+        "rarity": "uncommon",
+        "slot": "potion",
+        "perRun": 0.715,
+        "chestPerRun": 0.372,
+        "dropPerRun": 0.343
+      },
+      {
+        "name": "Амулет казначея",
+        "rarity": "uncommon",
+        "slot": "accessory",
+        "perRun": 0.685,
+        "chestPerRun": 0.4,
+        "dropPerRun": 0.285
+      },
+      {
+        "name": "Оберег стража",
+        "rarity": "uncommon",
+        "slot": "accessory",
+        "perRun": 0.67,
+        "chestPerRun": 0.388,
+        "dropPerRun": 0.282
+      },
+      {
+        "name": "Перстень силы",
+        "rarity": "uncommon",
+        "slot": "accessory",
+        "perRun": 0.652,
+        "chestPerRun": 0.37,
+        "dropPerRun": 0.282
+      },
+      {
+        "name": "Кожаный доспех",
+        "rarity": "uncommon",
+        "slot": "armor",
+        "perRun": 0.652,
+        "chestPerRun": 0.398,
+        "dropPerRun": 0.255
+      },
+      {
+        "name": "Большое зелье",
+        "rarity": "uncommon",
+        "slot": "potion",
+        "perRun": 0.647,
+        "chestPerRun": 0.365,
+        "dropPerRun": 0.282
+      },
+      {
+        "name": "Роба послушника",
+        "rarity": "common",
+        "slot": "armor",
+        "perRun": 0.642,
+        "chestPerRun": 0.343,
+        "dropPerRun": 0.3
+      },
+      {
+        "name": "Малое зелье",
+        "rarity": "common",
+        "slot": "potion",
+        "perRun": 0.635,
+        "chestPerRun": 0.333,
+        "dropPerRun": 0.302
+      },
+      {
+        "name": "Круглый щит",
+        "rarity": "uncommon",
+        "slot": "shield",
+        "perRun": 0.623,
+        "chestPerRun": 0.313,
+        "dropPerRun": 0.31
+      },
+      {
+        "name": "Костяной кинжал",
+        "rarity": "uncommon",
+        "slot": "weapon",
+        "perRun": 0.62,
+        "chestPerRun": 0.34,
+        "dropPerRun": 0.28
+      },
+      {
+        "name": "Ржавый меч",
+        "rarity": "common",
+        "slot": "weapon",
+        "perRun": 0.583,
+        "chestPerRun": 0.32,
+        "dropPerRun": 0.263
+      },
+      {
+        "name": "Деревянный щит",
+        "rarity": "common",
+        "slot": "shield",
+        "perRun": 0.573,
+        "chestPerRun": 0.315,
+        "dropPerRun": 0.258
+      },
+      {
+        "name": "Стальной щит",
+        "rarity": "rare",
+        "slot": "shield",
+        "perRun": 0.445,
+        "chestPerRun": 0.255,
+        "dropPerRun": 0.19
+      },
+      {
+        "name": "Трезубец точности",
+        "rarity": "rare",
+        "slot": "weapon",
+        "perRun": 0.432,
+        "chestPerRun": 0.273,
+        "dropPerRun": 0.16
+      },
+      {
+        "name": "Стальной клинок",
+        "rarity": "rare",
+        "slot": "weapon",
+        "perRun": 0.422,
+        "chestPerRun": 0.223,
+        "dropPerRun": 0.2
+      },
+      {
+        "name": "Клинок-пиявка",
+        "rarity": "rare",
+        "slot": "weapon",
+        "perRun": 0.417,
+        "chestPerRun": 0.25,
+        "dropPerRun": 0.168
+      },
+      {
+        "name": "Линза следопыта",
+        "rarity": "rare",
+        "slot": "accessory",
+        "perRun": 0.415,
+        "chestPerRun": 0.255,
+        "dropPerRun": 0.16
+      },
+      {
+        "name": "Шипастый щит",
+        "rarity": "rare",
+        "slot": "shield",
+        "perRun": 0.412,
+        "chestPerRun": 0.225,
+        "dropPerRun": 0.188
+      },
+      {
+        "name": "Эликсир зари",
+        "rarity": "rare",
+        "slot": "potion",
+        "perRun": 0.393,
+        "chestPerRun": 0.24,
+        "dropPerRun": 0.152
+      },
+      {
+        "name": "Свиток подсказки",
+        "rarity": "rare",
+        "slot": "potion",
+        "perRun": 0.388,
+        "chestPerRun": 0.223,
+        "dropPerRun": 0.165
+      },
+      {
+        "name": "Кольчуга",
+        "rarity": "rare",
+        "slot": "armor",
+        "perRun": 0.347,
+        "chestPerRun": 0.22,
+        "dropPerRun": 0.128
+      }
+    ]
+  },
+  {
+    "difficulty": "hard",
+    "runs": 400,
+    "enemyCountPerRun": 15.55,
+    "elitePerRun": 0.81,
+    "guardPerRun": 2,
+    "bossPerRun": 1,
+    "avgEnemyHp": 101,
+    "avgEnemyDmg": 16.4,
+    "itemsPerRun": 13.24,
+    "chestItemsPerRun": 6.97,
+    "dropItemsPerRun": 6.27,
+    "amuletsPerRun": 0.217,
+    "enemies": {
+      "goblin": 1435,
+      "skeleton": 1102,
+      "rat": 1049,
+      "bat": 1039,
+      "slime": 1054,
+      "orc": 540
+    },
+    "items": [
+      {
+        "name": "Короткий клинок",
+        "rarity": "uncommon",
+        "slot": "weapon",
+        "perRun": 1.09,
+        "chestPerRun": 0.338,
+        "dropPerRun": 0.752
+      },
+      {
+        "name": "Талисман удачи",
+        "rarity": "rare",
+        "slot": "accessory",
+        "perRun": 0.905,
+        "chestPerRun": 0.22,
+        "dropPerRun": 0.685
+      },
+      {
+        "name": "Костяной кинжал",
+        "rarity": "uncommon",
+        "slot": "weapon",
+        "perRun": 0.7,
+        "chestPerRun": 0.407,
+        "dropPerRun": 0.292
+      },
+      {
+        "name": "Перстень силы",
+        "rarity": "uncommon",
+        "slot": "accessory",
+        "perRun": 0.675,
+        "chestPerRun": 0.367,
+        "dropPerRun": 0.307
+      },
+      {
+        "name": "Противоядие",
+        "rarity": "uncommon",
+        "slot": "potion",
+        "perRun": 0.675,
+        "chestPerRun": 0.362,
+        "dropPerRun": 0.313
+      },
+      {
+        "name": "Кожаный доспех",
+        "rarity": "uncommon",
+        "slot": "armor",
+        "perRun": 0.67,
+        "chestPerRun": 0.372,
+        "dropPerRun": 0.297
+      },
+      {
+        "name": "Большое зелье",
+        "rarity": "uncommon",
+        "slot": "potion",
+        "perRun": 0.642,
+        "chestPerRun": 0.357,
+        "dropPerRun": 0.285
+      },
+      {
+        "name": "Деревянный щит",
+        "rarity": "common",
+        "slot": "shield",
+        "perRun": 0.632,
+        "chestPerRun": 0.357,
+        "dropPerRun": 0.275
+      },
+      {
+        "name": "Ржавый меч",
+        "rarity": "common",
+        "slot": "weapon",
+        "perRun": 0.632,
+        "chestPerRun": 0.33,
+        "dropPerRun": 0.302
+      },
+      {
+        "name": "Малое зелье",
+        "rarity": "common",
+        "slot": "potion",
+        "perRun": 0.62,
+        "chestPerRun": 0.335,
+        "dropPerRun": 0.285
+      },
+      {
+        "name": "Круглый щит",
+        "rarity": "uncommon",
+        "slot": "shield",
+        "perRun": 0.61,
+        "chestPerRun": 0.31,
+        "dropPerRun": 0.3
+      },
+      {
+        "name": "Оберег стража",
+        "rarity": "uncommon",
+        "slot": "accessory",
+        "perRun": 0.605,
+        "chestPerRun": 0.347,
+        "dropPerRun": 0.258
+      },
+      {
+        "name": "Амулет казначея",
+        "rarity": "uncommon",
+        "slot": "accessory",
+        "perRun": 0.598,
+        "chestPerRun": 0.34,
+        "dropPerRun": 0.258
+      },
+      {
+        "name": "Роба послушника",
+        "rarity": "common",
+        "slot": "armor",
+        "perRun": 0.59,
+        "chestPerRun": 0.3,
+        "dropPerRun": 0.29
+      },
+      {
+        "name": "Кольчуга",
+        "rarity": "rare",
+        "slot": "armor",
+        "perRun": 0.43,
+        "chestPerRun": 0.23,
+        "dropPerRun": 0.2
+      },
+      {
+        "name": "Эликсир зари",
+        "rarity": "rare",
+        "slot": "potion",
+        "perRun": 0.43,
+        "chestPerRun": 0.287,
+        "dropPerRun": 0.142
+      },
+      {
+        "name": "Стальной щит",
+        "rarity": "rare",
+        "slot": "shield",
+        "perRun": 0.427,
+        "chestPerRun": 0.282,
+        "dropPerRun": 0.145
+      },
+      {
+        "name": "Шипастый щит",
+        "rarity": "rare",
+        "slot": "shield",
+        "perRun": 0.415,
+        "chestPerRun": 0.278,
+        "dropPerRun": 0.138
+      },
+      {
+        "name": "Линза следопыта",
+        "rarity": "rare",
+        "slot": "accessory",
+        "perRun": 0.407,
+        "chestPerRun": 0.247,
+        "dropPerRun": 0.16
+      },
+      {
+        "name": "Трезубец точности",
+        "rarity": "rare",
+        "slot": "weapon",
+        "perRun": 0.395,
+        "chestPerRun": 0.245,
+        "dropPerRun": 0.15
+      },
+      {
+        "name": "Стальной клинок",
+        "rarity": "rare",
+        "slot": "weapon",
+        "perRun": 0.372,
+        "chestPerRun": 0.235,
+        "dropPerRun": 0.138
+      },
+      {
+        "name": "Свиток подсказки",
+        "rarity": "rare",
+        "slot": "potion",
+        "perRun": 0.362,
+        "chestPerRun": 0.233,
+        "dropPerRun": 0.13
+      },
+      {
+        "name": "Клинок-пиявка",
+        "rarity": "rare",
+        "slot": "weapon",
+        "perRun": 0.36,
+        "chestPerRun": 0.193,
+        "dropPerRun": 0.168
+      }
+    ]
+  }
+]
