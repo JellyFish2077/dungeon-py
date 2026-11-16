@@ -7994,6 +7994,59 @@ html[lang="en"] #inventory-bag::before { content: "Bag"; }
   font-size: 10px;
 }
 
+.ach-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: calc(50% - 3px);
+  min-width: 210px;
+  padding: 8px 9px;
+  border: 1px solid rgba(214, 168, 75, 0.14);
+  background: rgba(7, 11, 18, 0.28);
+}
+
+.ach-card.is-on {
+  border-color: rgba(214, 168, 75, 0.42);
+  background: rgba(214, 168, 75, 0.07);
+}
+
+.ach-mark {
+  flex: 0 0 auto;
+  color: #64748b;
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+.ach-card.is-on .ach-mark {
+  color: var(--gold-bright);
+}
+
+.ach-text {
+  min-width: 0;
+}
+
+.ach-text b {
+  display: block;
+  color: var(--parchment);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.ach-text span {
+  display: block;
+  margin-top: 2px;
+  color: var(--parchment-dim);
+  font-size: 9.5px;
+  line-height: 1.35;
+}
+
+@media (max-width: 520px) {
+  .ach-card {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
 /* Постоянная колонка больше не нужна. */
 body.game-page .side-panel {
   display: none !important;

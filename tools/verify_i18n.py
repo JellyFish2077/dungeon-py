@@ -148,6 +148,18 @@ def main():
                 page.wait_for_timeout(350)
                 scan(page, "журнал: " + tab)
             page.locator("#journal-close").click()
+            if page.locator(".nav-btn[data-panel='inventory']").count():
+                page.locator(".nav-btn[data-panel='inventory']").first.click()
+                page.wait_for_timeout(350)
+                if page.locator("#open-achievements").count():
+                    page.locator("#open-achievements").click()
+                    page.wait_for_timeout(350)
+                    scan(page, "достижения")
+                    page.evaluate(
+                        "() => document.querySelectorAll('.game-panel')"
+                        ".forEach(p => p.classList.remove('is-open'))")
+                    page.evaluate("() => { const d=document.getElementById('game-dock');"
+                                  " if (d) d.classList.add('hidden'); }")
 
             page.evaluate("() => window.__openShop(false)")
             page.wait_for_timeout(700)
