@@ -3304,7 +3304,10 @@
     return {
       uid: ++G.uid,
       key: t.key,
-      name: bossData ? bossData.name : t.name,
+      // Имя вида переводим сразу: у элиты оно склеивается с эпитетом
+      // («Miring Слизь»), и перевод по частям DOM уже не разбирает.
+      name: bossData ? bossData.name
+        : (typeof window.tr === "function" ? window.tr(t.name) : t.name),
       color: t.color,
       maxHp: hp,
       hp,
@@ -3355,14 +3358,19 @@
   }
 
   function eliteTitleFor(key) {
-    const titles = {
+    // Эпитеты живут в dungeon-content.js (ELITE_TITLES): i18n-content.js
+    // переводит их в английской версии. Своя копия карты здесь оставляла
+    // элит с русским именем при английском интерфейсе.
+    const titles = typeof ELITE_TITLES !== "undefined" ? ELITE_TITLES : {
       slime: "Топкий", rat: "Шатущий", bat: "Слепой", skeleton: "Костяной страж",
       goblin: "Жадный", spider: "Плевущий", orc: "Бурый", troll: "Окаменевший",
       ghost: "Бестелесный", wolf: "Голодный", zombie: "Болотный", golem: "Каменный страж",
       demon: "Пламенный", minotaur: "Свирепый", vampire: "Кровавый", lich: "Вечный",
       dragon: "Древний"
     };
-    return titles[key] || "Закалённый";
+    const title = titles[key] ||
+      (window.PyI18n && window.PyI18n.language === "en" ? "Tempered" : "Закалённый");
+    return typeof window.tr === "function" ? window.tr(title) : title;
   }
 
   function eliteChanceFor(floorIdx, isBossFloor) {
@@ -17522,6 +17530,17 @@ function topicName(key) {
   // ---------- Обновления ----------
   // Короткая лента новостей для главного меню. Новые записи — сверху.
   const UPDATES = [
+    {
+      version: "1.55.8",
+      date: "16 ноября 2026",
+      title: "Английская практика",
+      items: [
+        "Вопросы боя и задания практики собираются на языке интерфейса, а не переводятся после.",
+        "Все 196 шаблонов практики (пропуски, ошибки, копирование, функции) доступны на английском.",
+        "Смена языка в настройках перезагружает игру: вопросы и кодекс больше не остаются на старом языке.",
+        "Имена элитных врагов и эпитеты переводятся вместе с интерфейсом."
+      ]
+    },
     {
       version: "1.55.7",
       date: "16 ноября 2026",

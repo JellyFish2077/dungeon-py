@@ -14,6 +14,15 @@
   };
   const pyList = (arr) => "[" + arr.map((x) => '"' + x + '"').join(", ") + "]";
 
+  // Язык шаблона. Русская версия возвращает первый аргумент, английская —
+  // второй, поэтому логика генерации остаётся общей, а текст не переводится
+  // постфактум регулярками: перевод стоит рядом с фразой, которую он
+  // переводит. window.PyI18n появляется из i18n.js раньше этого файла;
+  // __PYQUIZ_LANG нужен проверкам в node, где нет DOM.
+  const EN = typeof window !== "undefined" &&
+    ((window.PyI18n && window.PyI18n.language === "en") || window.__PYQUIZ_LANG === "en");
+  const L = (ru, en) => (EN ? en : ru);
+
   function numWrongs(c, count) {
     const pool = [c + 1, c - 1, c + 2, c - 2, c + 3, c * 2, c - 3];
     const out = [];
@@ -78,9 +87,12 @@
     return { options: opts, answer: at };
   }
 
-  const NAME = ["Герой", "Орк", "Путник", "Стрелок", "Маг"];
-  const WEAPON = ["меч", "щит", "зелье", "лук", "копьё", "топор"];
-  const WORD = ["дракон", "орк", "слизь", "скелет", "тролль", "гоблин"];
+  const NAME = L(["Герой", "Орк", "Путник", "Стрелок", "Маг"],
+    ["Hero", "Orc", "Wanderer", "Archer", "Mage"]);
+  const WEAPON = L(["меч", "щит", "зелье", "лук", "копьё", "топор"],
+    ["sword", "shield", "potion", "bow", "spear", "axe"]);
+  const WORD = L(["дракон", "орк", "слизь", "скелет", "тролль", "гоблин"],
+    ["dragon", "orc", "slime", "skeleton", "troll", "goblin"]);
 
   // Каждая функция возвращает один случайный вопрос.
   const TEMPLATES = [
@@ -89,10 +101,11 @@
       const a = rnd(2, 9), b = rnd(2, 9), op = pick(["+", "-", "*"]);
       const val = op === "+" ? a + b : op === "-" ? a - b : a * b;
       const q = options(val, numWrongs(val));
-      return { topic: "operators", level: op === "*" ? 2 : 1, text: "Что выведет этот код?",
+      return { topic: "operators", level: op === "*" ? 2 : 1, text: L("Что выведет этот код?", "What will this code print?"),
         code: "print(" + a + " " + op + " " + b + ")",
         options: q.options, answer: q.answer,
-        explanation: "Порядок и знак: " + a + " " + op + " " + b + " = " + val + "." };
+        explanation: L("Порядок и знак: " + a + " " + op + " " + b + " = " + val + ".",
+          "Order and sign: " + a + " " + op + " " + b + " = " + val + ".") };
     },
     // 2. Целочисленное деление / остаток
     () => {
@@ -101,10 +114,12 @@
       const val = op === "//" ? div : mod;
       const wrongs = op === "//" ? [mod, a * b, Math.round(a / b)] : [div, a + b, b];
       const q = options(val, wrongs.concat(numWrongs(val)));
-      return { topic: "operators", level: 2, text: "Что выведет этот код?",
+      return { topic: "operators", level: 2, text: L("Что выведет этот код?", "What will this code print?"),
         code: "print(" + a + " " + op + " " + b + ")",
         options: q.options, answer: q.answer,
-        explanation: (op === "//" ? "// — целая часть деления" : "% — остаток от деления") +
+        explanation: L(
+          (op === "//" ? "// — целая часть деления" : "% — остаток от деления"),
+          (op === "//" ? "// gives the whole part of a division" : "% gives the remainder of a division")) +
           ": " + a + " " + op + " " + b + " = " + val + "." };
     },
     // 3. Степень
@@ -112,40 +127,44 @@
       const a = rnd(2, 6), b = rnd(2, 3);
       const val = Math.pow(a, b);
       const q = options(val, [a * b, a + b, Math.pow(b, a)]);
-      return { topic: "operators", level: 2, text: "Что выведет этот код?",
+      return { topic: "operators", level: 2, text: L("Что выведет этот код?", "What will this code print?"),
         code: "print(" + a + " ** " + b + ")",
         options: q.options, answer: q.answer,
-        explanation: "** — возведение в степень: " + a + " ** " + b + " = " + val + "." };
+        explanation: L("** — возведение в степень: ", "** raises to a power: ") +
+          a + " ** " + b + " = " + val + "." };
     },
     // 4. Склейка строк
     () => {
       const a = rnd(1, 9), b = rnd(1, 9);
       const correct = "" + a + b;
       const q = options(correct, [a + b, a + " " + b, b + "" + a]);
-      return { topic: "types", level: 2, text: "Что выведет этот код?",
+      return { topic: "types", level: 2, text: L("Что выведет этот код?", "What will this code print?"),
         code: 'print(str(' + a + ") + str(" + b + "))",
         options: q.options, answer: q.answer,
-        explanation: "str() делает строки, а + их склеивает: получится " + correct + "." };
+        explanation: L("str() делает строки, а + их склеивает: получится " + correct + ".",
+          "str() makes strings and + joins them: the result is " + correct + ".") };
     },
     // 5. Повтор строки
     () => {
-      const w = pick(["ха", "ау", "но"]), n = rnd(2, 4);
+      const w = L(pick(["ха", "ау", "но"]), pick(["ha", "au", "no"])), n = rnd(2, 4);
       const correct = w.repeat(n);
       const q = options(correct, [w.repeat(n - 1), w + " " + n, w.repeat(n) + w]);
-      return { topic: "strings", level: 2, text: "Что выведет этот код?",
+      return { topic: "strings", level: 2, text: L("Что выведет этот код?", "What will this code print?"),
         code: 'print("' + w + '" * ' + n + ")",
         options: q.options, answer: q.answer,
-        explanation: "Умножение строки на число повторяет её " + n + " раз: " + correct + "." };
+        explanation: L("Умножение строки на число повторяет её " + n + " раз: " + correct + ".",
+          "Multiplying a string by a number repeats it " + n + " times: " + correct + ".") };
     },
     // 6. Длина строки
     () => {
       const w = pick(WORD);
       const val = w.length;
       const q = options(val, numWrongs(val));
-      return { topic: "strings", level: 2, text: "Что выведет этот код?",
+      return { topic: "strings", level: 2, text: L("Что выведет этот код?", "What will this code print?"),
         code: 'print(len("' + w + '"))',
         options: q.options, answer: q.answer,
-        explanation: "len() считает число символов: в слове «" + w + "» их " + val + "." };
+        explanation: L("len() считает число символов: в слове «" + w + "» их " + val + ".",
+          "len() counts characters: the word “" + w + "” has " + val + ".") };
     },
     // 7. Индекс списка
     () => {
@@ -153,10 +172,11 @@
       const i = rnd(0, 4);
       const correct = arr[i];
       const q = options(correct, arr.filter((x) => x !== correct));
-      return { topic: "collections", level: 2, text: "Что выведет этот код?",
+      return { topic: "collections", level: 2, text: L("Что выведет этот код?", "What will this code print?"),
         code: "print(" + pyList(arr) + "[" + i + "])",
         options: q.options, answer: q.answer,
-        explanation: "Индекс " + i + " — это элемент номер " + (i + 1) + ", то есть «" + correct + "»." };
+        explanation: L("Индекс " + i + " — это элемент номер " + (i + 1) + ", то есть «" + correct + "».",
+          "Index " + i + " is item number " + (i + 1) + ", that is “" + correct + "”.") };
     },
     // 8. Отрицательный индекс
     () => {
@@ -164,10 +184,11 @@
       const k = rnd(1, 3);
       const correct = arr[arr.length - k];
       const q = options(correct, arr.filter((x) => x !== correct));
-      return { topic: "collections", level: 3, text: "Что выведет этот код?",
+      return { topic: "collections", level: 3, text: L("Что выведет этот код?", "What will this code print?"),
         code: "print(" + pyList(arr) + "[-" + k + "])",
         options: q.options, answer: q.answer,
-        explanation: "Индекс -" + k + " считает с конца: «" + correct + "»." };
+        explanation: L("Индекс -" + k + " считает с конца: «" + correct + "».",
+          "Index -" + k + " counts from the end: “" + correct + "”.") };
     },
     // 9. Срез списка
     () => {
@@ -179,55 +200,67 @@
         pyList(arr.slice(start + 1, start + 1 + take)),
         pyList(arr.slice(start, start + take + 1))
       ]);
-      return { topic: "collections", level: 3, text: "Что выведет этот код?",
+      return { topic: "collections", level: 3, text: L("Что выведет этот код?", "What will this code print?"),
         code: "print(" + pyList(arr) + "[" + start + ":" + (start + take) + "])",
         options: q.options, answer: q.answer,
-        explanation: "Срез берёт элементы с " + start + " по " + (start + take - 1) + ", последний не включается." };
+        explanation: L("Срез берёт элементы с " + start + " по " + (start + take - 1) + ", последний не включается.",
+          "A slice takes items from " + start + " to " + (start + take - 1) + "; the last one is not included.") };
     },
     // 10. Сколько раз выполнится for range(n)
     () => {
       const n = rnd(2, 6);
       const q = options(n, numWrongs(n));
-      return { topic: "control", level: 2, text: "Сколько чисел выведет этот код?",
+      return { topic: "control", level: 2, text: L("Сколько чисел выведет этот код?", "How many numbers will this code print?"),
         code: "for i in range(" + n + "):\n    print(i)",
         options: q.options, answer: q.answer,
-        explanation: "range(" + n + ") даёт числа от 0 до " + (n - 1) + " — всего " + n + "." };
+        explanation: L("range(" + n + ") даёт числа от 0 до " + (n - 1) + " — всего " + n + ".",
+          "range(" + n + ") gives numbers from 0 to " + (n - 1) + " — " + n + " in total.") };
     },
     // 11. range(a, b)
     () => {
       const a = rnd(1, 3), b = a + rnd(2, 4);
       const val = b - a;
       const q = options(val, numWrongs(val));
-      return { topic: "control", level: 3, text: "Сколько чисел выведет этот код?",
+      return { topic: "control", level: 3, text: L("Сколько чисел выведет этот код?", "How many numbers will this code print?"),
         code: "for i in range(" + a + ", " + b + "):\n    print(i)",
         options: q.options, answer: q.answer,
-        explanation: "range(" + a + ", " + b + ") даёт числа с " + a + " по " + (b - 1) + " — это " + val + "." };
+        explanation: L("range(" + a + ", " + b + ") даёт числа с " + a + " по " + (b - 1) + " — это " + val + ".",
+          "range(" + a + ", " + b + ") gives numbers from " + a + " to " + (b - 1) + " — that is " + val + ".") };
     },
     // 12. while
     () => {
       const start = rnd(3, 6);
       const q = options(start, numWrongs(start));
-      return { topic: "control", level: 3, text: "Сколько чисел выведет этот код?",
+      return { topic: "control", level: 3, text: L("Сколько чисел выведет этот код?", "How many numbers will this code print?"),
         code: "i = " + start + "\nwhile i > 0:\n    print(i)\n    i = i - 1",
         options: q.options, answer: q.answer,
-        explanation: "Цикл идёт от " + start + " до 1 — всего " + start + " повторений." };
+        explanation: L("Цикл идёт от " + start + " до 1 — всего " + start + " повторений.",
+          "The loop goes from " + start + " down to 1 — " + start + " iterations in total.") };
     },
     // 13. bool
     () => {
-      const cases = [
+      const cases = L([
         { v: "0", b: false, code: "print(bool(0))" },
         { v: "1", b: true, code: "print(bool(1))" },
         { v: '"орк"', b: true, code: 'print(bool("орк"))' },
         { v: '""', b: false, code: 'print(bool(""))' },
         { v: "[]", b: false, code: "print(bool([]))" },
         { v: "[1, 2]", b: true, code: "print(bool([1, 2]))" }
-      ];
+      ], [
+        { v: "0", b: false, code: "print(bool(0))" },
+        { v: "1", b: true, code: "print(bool(1))" },
+        { v: '"orc"', b: true, code: 'print(bool("orc"))' },
+        { v: '""', b: false, code: 'print(bool(""))' },
+        { v: "[]", b: false, code: "print(bool([]))" },
+        { v: "[1, 2]", b: true, code: "print(bool([1, 2]))" }
+      ]);
       const c = pick(cases);
       const correct = c.b ? "True" : "False";
       const q = options(correct, [c.b ? "False" : "True", "None", "0"]);
-      return { topic: "types", level: 3, text: "Что выведет этот код?",
+      return { topic: "types", level: 3, text: L("Что выведет этот код?", "What will this code print?"),
         code: c.code, options: q.options, answer: q.answer,
-        explanation: "Пустое и ноль — ложь, остальное — истина: результат " + correct + "." };
+        explanation: L("Пустое и ноль — ложь, остальное — истина: результат " + correct + ".",
+          "Empty values and zero are false, everything else is true: the result is " + correct + ".") };
     },
     // 14. Сравнение
     () => {
@@ -238,22 +271,24 @@
       else if (op === ">") val = a > b;
       else val = a < b;
       const correct = val ? "True" : "False";
-      const q = options(correct, [val ? "False" : "True", "" + a + b, "Ошибка"]);
-      return { topic: "operators", level: 2, text: "Что выведет этот код?",
+      const q = options(correct, [val ? "False" : "True", "" + a + b, L("Ошибка", "Error")]);
+      return { topic: "operators", level: 2, text: L("Что выведет этот код?", "What will this code print?"),
         code: "print(" + a + " " + op + " " + b + ")",
         options: q.options, answer: q.answer,
-        explanation: "Сравнение " + a + " " + op + " " + b + " — это " + correct + "." };
+        explanation: L("Сравнение " + a + " " + op + " " + b + " — это " + correct + ".",
+          "The comparison " + a + " " + op + " " + b + " is " + correct + ".") };
     },
     // 15. Методы строк
     () => {
-      const w = pick(["меч", "щит", "орк", "лук"]);
+      const w = pick(L(["меч", "щит", "орк", "лук"], ["sword", "shield", "orc", "bow"]));
       const up = pick([true, false]);
       const correct = up ? w.toUpperCase() : w.toUpperCase().toLowerCase();
       const q = options(correct, [up ? w.toUpperCase().toLowerCase() : w.toUpperCase(), w + "!", w.length]);
-      return { topic: "strings", level: 2, text: "Что выведет этот код?",
+      return { topic: "strings", level: 2, text: L("Что выведет этот код?", "What will this code print?"),
         code: 'print("' + w + '".' + (up ? "upper" : "lower") + "())",
         options: q.options, answer: q.answer,
-        explanation: "." + (up ? "upper()" : "lower()") + " меняет регистр букв: " + correct + "." };
+        explanation: "." + (up ? "upper()" : "lower()") +
+          L(" меняет регистр букв: ", " changes letter case: ") + correct + "." };
     },
     // 16. max / min
     () => {
@@ -262,36 +297,44 @@
       const val = up ? Math.max.apply(null, nums) : Math.min.apply(null, nums);
       const others = nums.filter((x) => x !== val);
       const q = options(val, others.concat(numWrongs(val)));
-      return { topic: "collections", level: 3, text: "Что выведет этот код?",
+      return { topic: "collections", level: 3, text: L("Что выведет этот код?", "What will this code print?"),
         code: "print(" + (up ? "max" : "min") + "([" + nums.join(", ") + "]))",
         options: q.options, answer: q.answer,
-        explanation: (up ? "max()" : "min()") + " возвращает " +
-          (up ? "наибольшее" : "наименьшее") + " число: " + val + "." };
+        explanation: (up ? "max()" : "min()") + L(
+          " возвращает " + (up ? "наибольшее" : "наименьшее") + " число: " + val + ".",
+          " returns the " + (up ? "largest" : "smallest") + " number: " + val + ".") };
     },
     // 17. f-строка
     () => {
       const nm = pick(NAME), hp = rnd(10, 99);
-      const correct = "У " + nm + " " + hp + " HP";
-      const q = options(correct, [
+      const correct = L("У " + nm + " " + hp + " HP", nm + " has " + hp + " HP");
+      const q = options(correct, L([
         "У " + nm + " hp HP",
         "У {nm} " + hp + " HP",
         "У " + nm + " " + hp
-      ]);
-      return { topic: "strings", level: 3, text: "Что выведет этот код?",
-        code: 'name = "' + nm + '"\nhp = ' + hp + '\nprint(f"У {name} {hp} HP")',
+      ], [
+        nm + " has hp HP",
+        "{name} has " + hp + " HP",
+        nm + " " + hp + " HP"
+      ]));
+      return { topic: "strings", level: 3, text: L("Что выведет этот код?", "What will this code print?"),
+        code: L('name = "' + nm + '"\nhp = ' + hp + '\nprint(f"У {name} {hp} HP")',
+          'name = "' + nm + '"\nhp = ' + hp + '\nprint(f"{name} has {hp} HP")'),
         options: q.options, answer: q.answer,
-        explanation: "f-строка подставляет значения переменных из {…}." };
+        explanation: L("f-строка подставляет значения переменных из {…}.",
+          "The f-string substitutes variable values from {…}.") };
     },
     // 18. Словарь
     () => {
       const has = pick([true, false]);
       const correct = "" + (has ? 42 : 0);
-      const q = options(correct, has ? ["0", "None", "Ошибка"] : ["42", "None", "Ошибка"]);
+      const q = options(correct, has ? ["0", "None", L("Ошибка", "Error")] : ["42", "None", L("Ошибка", "Error")]);
       const code = 'hero = {"hp": 42}\nprint(hero.get("' + (has ? "hp" : "mp") + '", 0))';
-      return { topic: "collections", level: 3, text: "Что выведет этот код?",
+      return { topic: "collections", level: 3, text: L("Что выведет этот код?", "What will this code print?"),
         code: code, options: q.options, answer: q.answer,
-        explanation: has ? "Ключ есть — вернётся значение 42."
-          : "Ключа нет — get() вернёт второй аргумент, 0." };
+        explanation: has
+          ? L("Ключ есть — вернётся значение 42.", "The key exists — the value 42 is returned.")
+          : L("Ключа нет — get() вернёт второй аргумент, 0.", "No such key — get() returns the second argument, 0.") };
     },
 
     // ================= Строгие задания (level 4) =================
@@ -310,49 +353,56 @@
         pyList(up ? arr.slice().reverse() : arr.slice().sort()),
         pyList(arr.slice(1).concat([arr[0]]))
       ], (i) => pyList(arr.slice(i).concat(arr.slice(0, i))));
-      return { topic: "collections", level: 4, text: "Что выведет этот код?",
+      return { topic: "collections", level: 4, text: L("Что выведет этот код?", "What will this code print?"),
         code: "a = " + src + "\nprint(" + (up ? "sorted(a)" : "a[::-1]") + ")",
         options: q.options, answer: q.answer,
-        explanation: up ? "sorted() возвращает новый отсортированный список, исходный не меняется."
-          : "Срез с шагом −1 разворачивает список." };
+        explanation: L(
+          up ? "sorted() возвращает новый отсортированный список, исходный не меняется."
+            : "Срез с шагом −1 разворачивает список.",
+          up ? "sorted() returns a new sorted list; the original is left unchanged."
+            : "A slice with step −1 reverses the list.") };
     },
     // 20. Перебор словаря
     () => {
-      const names = shuffle(NAME.concat(["Тролль", "Кобольд"])).slice(0, 3);
+      const names = shuffle(L(NAME.concat(["Тролль", "Кобольд"]), NAME.concat(["Troll", "Kobold"]))).slice(0, 3);
       const which = rnd(0, 2);
       const dict = names.map((n, i) => '"' + n + '": ' + (i + 2) * 5).join(", ");
       const correct = String((which + 2) * 5);
       const q = mcOptions(correct, names.map((_, i) => String((i + 2) * 5 + 5)),
         (i) => String((which + 2) * 5 + 10 * (i + 1)));
-      return { topic: "collections", level: 4, text: "Что выведет этот код?",
+      return { topic: "collections", level: 4, text: L("Что выведет этот код?", "What will this code print?"),
         code: "h = {" + dict + "}\nprint(h['" + names[which] + "'])",
         options: q.options, answer: q.answer,
-        explanation: "Ключ «" + names[which] + "» хранит значение " + correct + "." };
+        explanation: L("Ключ «" + names[which] + "» хранит значение " + correct + ".",
+          "The key “" + names[which] + "” stores the value " + correct + ".") };
     },
     // 21. Генераторное выражение
     () => {
       const n = rnd(3, 6);
       const val = n * (n - 1); // сумма 2·x при x от 0 до n−1
       const q = options(val, numWrongs(val), (i) => n + i);
-      return { topic: "collections", level: 4, text: "Что выведет этот код?",
+      return { topic: "collections", level: 4, text: L("Что выведет этот код?", "What will this code print?"),
         code: "print(sum(x * 2 for x in range(" + n + ")))",
         options: q.options, answer: q.answer,
-        explanation: "Сумма чисел от 0 до " + (n - 1) + ", удвоенных: 2 × " +
-          (n * (n - 1) / 2) + " = " + val + "." };
+        explanation: L("Сумма чисел от 0 до " + (n - 1) + ", удвоенных: 2 × " +
+          (n * (n - 1) / 2) + " = " + val + ".",
+          "The sum of the numbers from 0 to " + (n - 1) + ", doubled: 2 × " +
+          (n * (n - 1) / 2) + " = " + val + ".") };
     },
     // 22. Вложенный цикл
     () => {
       const a = rnd(2, 4), b = rnd(2, 4);
       const val = a * b;
       const q = options(val, numWrongs(val));
-      return { topic: "control", level: 4, text: "Сколько чисел выведет этот код?",
+      return { topic: "control", level: 4, text: L("Сколько чисел выведет этот код?", "How many numbers will this code print?"),
         code: "for i in range(" + a + "):\n    for j in range(" + b + "):\n        print(i, j)",
         options: q.options, answer: q.answer,
-        explanation: "Внутренний цикл выполнится " + a + " раз, по " + b + " шага каждый: " + val + "." };
+        explanation: L("Внутренний цикл выполнится " + a + " раз, по " + b + " шага каждый: " + val + ".",
+          "The inner loop runs " + a + " times, " + b + " steps each: " + val + ".") };
     },
     // 23. break в цикле
     () => {
-      const arr = shuffle(WEAPON.concat(["кирка", "факел"])).slice(0, 5);
+      const arr = shuffle(WEAPON.concat(L(["кирка", "факел"], ["pickaxe", "torch"]))).slice(0, 5);
       const i = rnd(1, 3);
       // break стоит ДО print, поэтому напечатаны элементы до arr[i],
       // а сам arr[i] уже не выводится.
@@ -362,14 +412,15 @@
         pyList(arr),
         pyList(arr.slice(i))
       ], () => pyList(arr.slice(1).concat([arr[0]])));
-      return { topic: "control", level: 4, text: "Что выведет этот код?",
+      return { topic: "control", level: 4, text: L("Что выведет этот код?", "What will this code print?"),
         // Собираем результат в список: иначе print(x) даёт по строке на
         // элемент, и ответ «список» не совпадает с настоящим выводом.
         code: "a = " + pyList(arr) + "\nout = []\nfor x in a:\n    if x == '" +
           arr[i] + "':\n        break\n    out.append(x)\nprint(out)",
         options: q.options, answer: q.answer,
-        explanation: "break выходит из цикла ДО append, поэтому «" + arr[i] +
-          "» в список не попадает." };
+        explanation: L("break выходит из цикла ДО append, поэтому «" + arr[i] +
+          "» в список не попадает.",
+          "break leaves the loop BEFORE append, so “" + arr[i] + "” never gets into the list.") };
     },
     // 24. Функция с возвратом
     () => {
@@ -377,21 +428,24 @@
       const sq = n * n;
       const q = options(sq, [n + 2, n * 3, n + n + 1].concat(numWrongs(sq)),
         (i) => sq + i);
-      return { topic: "functions", level: 4, text: "Что выведет этот код?",
+      return { topic: "functions", level: 4, text: L("Что выведет этот код?", "What will this code print?"),
         code: "def f(x):\n    return x * x\n\nprint(f(" + n + "))",
         options: q.options, answer: q.answer,
-        explanation: "return отдаёт результат, f(" + n + ") = " + sq + "." };
+        explanation: L("return отдаёт результат, f(" + n + ") = " + sq + ".",
+          "return hands back the result, f(" + n + ") = " + sq + ".") };
     },
     // 25. Значение по умолчанию и вызов по имени
     () => {
       const d = rnd(2, 5), mul = rnd(2, 4);
       const val = d * mul;
       const q = options(val, [d + mul, d, mul, d * mul + 1].concat(numWrongs(val)), (i) => val + i);
-      return { topic: "functions", level: 4, text: "Что выведет этот код?",
+      return { topic: "functions", level: 4, text: L("Что выведет этот код?", "What will this code print?"),
         code: "def f(a, b=" + d + "):\n    return a * b\n\nprint(f(" + mul + "))",
         options: q.options, answer: q.answer,
-        explanation: "Аргумент b не передан — берётся значение по умолчанию " + d +
-          ", поэтому " + mul + " × " + d + " = " + val + "." };
+        explanation: L("Аргумент b не передан — берётся значение по умолчанию " + d +
+          ", поэтому " + mul + " × " + d + " = " + val + ".",
+          "The argument b is not passed, so its default " + d +
+          " is used: " + mul + " × " + d + " = " + val + ".") };
     },
     // 26. Изменение списка в цикле
     () => {
@@ -405,10 +459,11 @@
         pyNums(src.map((x) => x * 2)),
         pyNums(src.slice(1).concat([src[0]]).map((x) => x * x))
       ], (i) => pyNums(src.slice(i).concat(src.slice(0, i)).map((x) => x * x)));
-      return { topic: "collections", level: 4, text: "Что выведет этот код?",
+      return { topic: "collections", level: 4, text: L("Что выведет этот код?", "What will this code print?"),
         code: "a = " + pyNums(src) + "\nfor i in range(len(a)):\n    a[i] = a[i] * a[i]\nprint(a)",
         options: q.options, answer: q.answer,
-        explanation: "Изменение элемента на месте меняет сам список — все числа возводятся в квадрат." };
+        explanation: L("Изменение элемента на месте меняет сам список — все числа возводятся в квадрат.",
+          "Changing an item in place changes the list itself — every number is squared.") };
     },
     // 27. Итерация по enumerate
     () => {
@@ -418,11 +473,13 @@
       const q = mcOptions(correct, src.filter((_, i) => i !== which)
         .map((w) => w + " " + (which + 1)),
         (i) => src[which] + " " + (which + 1 + i));
-      return { topic: "collections", level: 4, text: "Что выведет этот код?",
+      return { topic: "collections", level: 4, text: L("Что выведет этот код?", "What will this code print?"),
         code: "for i, x in enumerate(" + pyList(src) + ", 1):\n    if i == " + (which + 1) + ":\n        print(x, i)",
         options: q.options, answer: q.answer,
-        explanation: "enumerate даёт пары «элемент, номер». Нумерация с 1: «" +
-          src[which] + "» имеет номер " + (which + 1) + "." };
+        explanation: L("enumerate даёт пары «элемент, номер». Нумерация с 1: «" +
+          src[which] + "» имеет номер " + (which + 1) + ".",
+          "enumerate yields pairs of “item, number”. Numbering starts at 1: “" +
+          src[which] + "” is number " + (which + 1) + ".") };
     },
     // 28. Модуль и точка
     () => {
@@ -432,22 +489,26 @@
       const correct = d + ".0";
       const q = mcOptions(correct, [String(d + 1), String(d * 2), (d + 1) + ".0"],
         (i) => (d + i) + ".0");
-      return { topic: "modules", level: 4, text: "Что выведет этот код?",
+      return { topic: "modules", level: 4, text: L("Что выведет этот код?", "What will this code print?"),
         code: "import math\nprint(math.sqrt(" + d * d + "))",
         options: q.options, answer: q.answer,
-        explanation: "math.sqrt(" + d * d + ") = " + d +
-          ", и это число типа float — поэтому печатается «" + correct + "»." };
+        explanation: L("math.sqrt(" + d * d + ") = " + d +
+          ", и это число типа float — поэтому печатается «" + correct + "».",
+          "math.sqrt(" + d * d + ") = " + d +
+          ", and that is a float — so it prints “" + correct + "”.") };
     },
     // 29. Именованный аргумент и порядок
     () => {
       const a = rnd(2, 6), b = rnd(7, 12);
       const val = a * b;
       const q = options(val, [a + b, b - a, a * b + 1].concat(numWrongs(val)), (i) => val + i);
-      return { topic: "functions", level: 4, text: "Что выведет этот код?",
+      return { topic: "functions", level: 4, text: L("Что выведет этот код?", "What will this code print?"),
         code: "def box(w, h):\n    return w * h\n\nprint(box(h=" + b + ", w=" + a + "))",
         options: q.options, answer: q.answer,
-        explanation: "Имена аргументов разрешают передавать их в любом порядке: " +
-          a + " × " + b + " = " + val + "." };
+        explanation: L("Имена аргументов разрешают передавать их в любом порядке: " +
+          a + " × " + b + " = " + val + ".",
+          "Named arguments may be passed in any order: " +
+          a + " × " + b + " = " + val + ".") };
     },
     // 30. Условное выражение
     () => {
@@ -456,11 +517,13 @@
       const correct = String(up ? a : b);
       const q = mcOptions(correct, [String(up ? b : a), String(a + b), String(Math.abs(a - b))],
         (i) => String(Math.max(a, b) + i));
-      return { topic: "operators", level: 4, text: "Что выведет этот код?",
+      return { topic: "operators", level: 4, text: L("Что выведет этот код?", "What will this code print?"),
         code: "a = " + a + "\nb = " + b + "\nprint(a if a > b else b)",
         options: q.options, answer: q.answer,
-        explanation: "Тернарное выражение берёт " + (up ? "a" : "b") +
-          ", потому что " + (up ? a + " > " + b : a + " ≤ " + b) + "." };
+        explanation: L("Тернарное выражение берёт " + (up ? "a" : "b") +
+          ", потому что " + (up ? a + " > " + b : a + " ≤ " + b) + ".",
+          "The conditional expression picks " + (up ? "a" : "b") +
+          ", because " + (up ? a + " > " + b : a + " ≤ " + b) + ".") };
     }
   ];
 
