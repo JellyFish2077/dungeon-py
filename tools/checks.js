@@ -2930,9 +2930,11 @@ log(squadSaveOk, "отряд и дистанция переживают сохр
 
 // ================= 16. Опасная среда этажей =================
 const hazKeys = Object.keys(API.HAZARD_TYPES);
-log(hazKeys.length === 3 && hazKeys.indexOf("frost") >= 0 &&
-  hazKeys.indexOf("dark") >= 0 && hazKeys.indexOf("lava") >= 0,
-  "есть три вида опасной среды", hazKeys.join(", "));
+log(hazKeys.length === 6 && hazKeys.indexOf("frost") >= 0 &&
+  hazKeys.indexOf("dark") >= 0 && hazKeys.indexOf("lava") >= 0 &&
+  hazKeys.indexOf("fog") >= 0 && hazKeys.indexOf("embers") >= 0 &&
+  hazKeys.indexOf("storm") >= 0,
+  "есть шесть видов опасной среды", hazKeys.join(", "));
 log(hazKeys.every((k) => {
   const h = API.HAZARD_TYPES[k];
   return h.key === k && h.name && h.text && h.hint && h.icon;
@@ -2989,6 +2991,50 @@ for (let i = 0; i < 12 && hazardClean; i++) {
   if (bad.length) { hazardClean = false; hazardDetail = bad[0]; }
 }
 log(hazardClean, "среда обходит лестницы, добычу, врагов и вход", hazardDetail);
+// Туман и гроза не занимают клетки: они действуют на весь этаж.
+[[1, "fog"], [3, "storm"]].forEach(([idx, key]) => {
+  const st = API.createFloorState(idx);
+  let cells = 0;
+  st.hazard.forEach((row) => row.forEach((v) => { if (v) cells += 1; }));
+  log(cells === 0, "«" + key + "» не занимает клетки", cells);
+});
+// Угли — плитки, но их меньше лавы и бьют слабее.
+const stEmbers = API.createFloorState(7);
+let emberCells = 0;
+stEmbers.hazard.forEach((row) => row.forEach((v) => { if (v) emberCells += 1; }));
+log(emberCells > 0, "на этаже с углями они разложены", emberCells + " клеток");
+
+// Туман сужает обзор меньше тьмы, но больше обычного света.
+freshRun(1);
+log(Math.abs(API.viewRadius() - 3.4) < 0.001, "в тумане обзор уже обычного",
+  API.viewRadius());
+// Гроза усиливает удар монстров на 20%.
+freshRun(3);
+log(Math.abs(API.hazardDamageMul() - 1.2) < 0.001, "гроза усиливает урон монстров",
+  API.hazardDamageMul());
+freshRun(0);
+log(API.hazardDamageMul() === 1, "без грозы урон обычный");
+
+// Угли обжигают, но слабее лавы.
+freshRun(7);
+const stBurnEmbers = API.createFloorState(7);
+G.map = stBurnEmbers.map;
+G.hazard = stBurnEmbers.hazard;
+G.playerPos = { ...stBurnEmbers.playerPos };
+G.enemies = [];
+G.player.hp = 500;
+G.player.maxHp = 500;
+G.player.defBonus = 0;
+G.hazard[G.playerPos.y][G.playerPos.x] = "embers";
+const emberHp = G.player.hp;
+const emberBurn = API.hazardTick();
+log(emberBurn > 0 && G.player.hp === emberHp - emberBurn,
+  "угли отнимают здоровье", emberBurn + " урона");
+G.hazard[G.playerPos.y][G.playerPos.x] = "lava";
+const lavaHp = G.player.hp;
+const lavaBurn = API.hazardTick();
+log(lavaBurn > emberBurn, "лава бьёт сильнее углей",
+  "угли " + emberBurn + ", лава " + lavaBurn);
 
 // Тьма сужает обзор, лёд и лава — нет.
 freshRun(8);

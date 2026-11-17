@@ -450,7 +450,13 @@
     dark: ["Thick Darkness", "Torches cannot pierce this dark: you see barely two steps.",
       "In the dark your sight is halved — rely on the minimap (M)."],
     lava: ["Lava Rifts", "Lava seeps from cracks in the floor. Standing on it burns.",
-      "Lava takes health every turn you stand on it."]
+      "Lava takes health every turn you stand on it."],
+    fog: ["Milky Fog", "Fog swallows sound and light: you see farther than in darkness, but less than usual.",
+      "Sight is shorter than usual but wider than in darkness. Keep the minimap at hand."],
+    embers: ["Smouldering Embers", "The floor is strewn with coals. They do not blaze, but they burn every turn.",
+      "Embers take less health than lava, but they are more common."],
+    storm: ["Thunder Strikes", "The air hums and every monster hit carries a shock.",
+      "Monsters on this floor hit 20% harder. A correct answer still decides the fight."]
   };
   if (typeof HAZARD_TYPES !== "undefined") {
     Object.keys(hazards).forEach(function (key) {
@@ -467,6 +473,8 @@
       "Instantly +60 gold, and gold from monsters is doubled."],
     blessing: ["Stone Gift", "+40 max health for this floor and a full heal.",
       "Monsters on the floor restore 10% of the damage you deal."],
+    ward: ["Path Ward", "Monsters on this floor hit 20% weaker.",
+      "30% less gold from answers on this floor."],
     pass: ["Walk Past", "Change nothing.",
       "The floor stays ordinary: no gift and no bargain."]
   };
@@ -1404,6 +1412,16 @@
         "</div><button class='exit-btn' id='updates-close' type='button' " +
         "data-tip='Close updates. Escape.'>Close</button></div>" +
         "<div class='battle-mid updates-body'>" +
+        "<article class='update-entry'>" +
+        "<div class='update-entry-head'><h3>Three new floor hazards</h3>" +
+        "<span class='update-version'>v1.55.12</span></div>" +
+        "<div class='update-date'>November 17, 2026</div>" +
+        "<ul>" +
+        "<li>Milky Fog: sight is shorter than usual but wider than in darkness.</li>" +
+        "<li>Smouldering Embers: tiles that burn every turn at half the damage of lava.</li>" +
+        "<li>Thunder Strikes: monsters on the floor hit 20% harder.</li>" +
+        "<li>The new hazards are spread across both campaigns, each with its own hint.</li>" +
+        "</ul></article>" +
         "<article class='update-entry'>" +
         "<div class='update-entry-head'><h3>A vault always gets its role</h3>" +
         "<span class='update-version'>v1.55.11</span></div>" +
