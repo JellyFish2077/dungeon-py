@@ -8739,7 +8739,7 @@ log(missBadge.side === "enemy" && missBadge.icon === "miss" &&
   for (let i = 0; i < API.FLOORS_V2.length; i += 1) {
     const f = API.floorDef(i);
     if (f.boss || !f.vault) continue;
-    for (let k = 0; k < 4; k += 1) {
+    for (let k = 0; k < 12; k += 1) {
       const state = API.buildCheckedFloor(i);
       total += 1;
       const role = !!(state.plan &&
