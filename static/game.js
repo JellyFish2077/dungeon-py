@@ -1010,6 +1010,15 @@
             room.role !== "resource" && room.role !== "rest" &&
             room.role !== "vault" && room.role !== "treasure");
       }
+      if (!target) {
+        // Ресурсная комната — единственная роль, которой можно пожертвовать:
+        // этаж обещает тайник таблицей, а жилы просто встречаются на карте.
+        // Без этого редкий план с одними ресурсными листьями выпускал этаж
+        // без роли vault: тайника нет, а рычаг стоит без дела.
+        const resources = leaves.filter((room) => room.role === "resource");
+        target = resources.length > 1 ? resources[resources.length - 1]
+          : (resources[0] || null);
+      }
       if (target) target.role = "vault";
     }
     return plan;
@@ -1722,6 +1731,9 @@
         problems.push("привал слишком близко к вратам");
       }
     });
+    if (b.vault && !counts.vault) {
+      problems.push("этаж обещает тайник, а роли vault нет");
+    }
     if ((counts.vault || 0) > 1) problems.push("больше одного тайника");
     if ((counts.rest || 0) > 1) problems.push("больше одного привала");
     if ((counts.elite || 0) > (Number(b.eliteCap) || 0)) {
@@ -17615,6 +17627,16 @@ function topicName(key) {
   // ---------- Обновления ----------
   // Короткая лента новостей для главного меню. Новые записи — сверху.
   const UPDATES = [
+    {
+      version: "1.55.11",
+      date: "17 ноября 2026",
+      title: "Тайник всегда получает роль",
+      items: [
+        "Редкий план с одними ресурсными листьями выпускал этаж без тайника: исправлено.",
+        "Генератор теперь отвергает план, если этаж обещает тайник, а роли vault нет.",
+        "Проверка тайника увеличена с 32 до 108 сборок за прогон."
+      ]
+    },
     {
       version: "1.55.10",
       date: "17 ноября 2026",

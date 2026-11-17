@@ -1405,6 +1405,15 @@
         "data-tip='Close updates. Escape.'>Close</button></div>" +
         "<div class='battle-mid updates-body'>" +
         "<article class='update-entry'>" +
+        "<div class='update-entry-head'><h3>A vault always gets its role</h3>" +
+        "<span class='update-version'>v1.55.11</span></div>" +
+        "<div class='update-date'>November 17, 2026</div>" +
+        "<ul>" +
+        "<li>A rare plan with only resource leaves could ship a floor without a vault — fixed.</li>" +
+        "<li>The generator now rejects a plan when the floor promises a vault but has no vault room.</li>" +
+        "<li>The vault check now builds 108 floors per run instead of 32.</li>" +
+        "</ul></article>" +
+        "<article class='update-entry'>" +
         "<div class='update-entry-head'><h3>Content: questions, events, omens and gear</h3>" +
         "<span class='update-version'>v1.55.10</span></div>" +
         "<div class='update-date'>November 17, 2026</div>" +
