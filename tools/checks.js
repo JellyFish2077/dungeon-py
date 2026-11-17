@@ -56,6 +56,16 @@ log(API.FLOOR_EPILOGUES_V1.length === 10, "эпиграфов на 10 этаже
 log(API.FLOOR_EPILOGUES_V2.length === 15, "эпиграфов на 15 этажей v2", API.FLOOR_EPILOGUES_V2.length);
 log(API.FLOOR_EVENTS_V1.length === 10, "событий на 10 этажей v1", API.FLOOR_EVENTS_V1.length);
 log(API.FLOOR_EVENTS_V2.length === 15, "событий на 15 этажей v2", API.FLOOR_EVENTS_V2.length);
+const evVariants = [0, 1, 2].map((v) => API.floorEvent(0, 2, v).text);
+log(new Set(evVariants).size === 3, "у этажа три разных варианта события");
+log(API.floorEvent(0, 2, 3).text === evVariants[0],
+  "четвёртый вариант зацикливается на первом");
+let variantsOk = true;
+for (let i = 0; i < API.FLOOR_EVENTS_V2.length; i++) {
+  const texts = [0, 1, 2].map((v) => API.floorEvent(i, 2, v).text);
+  if (texts.some((t) => !t) || new Set(texts).size !== 3) { variantsOk = false; break; }
+}
+log(variantsOk, "у каждого этажа три непустых варианта события");
 const withQuips = API.ENEMY_TYPES.filter((t) => (API.ENEMY_QUIPS[t.key] || []).length);
 log(withQuips.length === 20, "реплики есть у всех 20 врагов", withQuips.length);
 
@@ -1916,7 +1926,7 @@ log(twoHtml.indexOf("effect-dot lifesteal") >= 0 &&
 // Все 12 видов эффектов должны иметь человеческое описание, иначе
 // игрок увидит сырой идентификатор вида effect-dot-что-то.
 const allKinds = [...new Set(ITEM_POOL.filter((i) => i.effect).map((i) => i.effect.kind))];
-log(allKinds.length === 12, "в пуле ровно 12 видов особых эффектов", allKinds.length);
+log(allKinds.length === 13, "в пуле ровно 13 видов особых эффектов", allKinds.length);
 log(!!API.EFFECT_HINTS, "таблица подсказок EFFECT_HINTS экспортируется");
 const rawKinds = allKinds.filter((k) => !API.EFFECT_HINTS || !API.EFFECT_HINTS[k]);
 log(rawKinds.length === 0, "у каждого вида эффекта есть русская подсказка", rawKinds.join(","));
@@ -3116,8 +3126,9 @@ log(API.BLESSINGS.curse.good && API.BLESSINGS.curse.extra &&
   "у каждой сделки есть выгода и цена");
 log(API.blessingFor(3, "curse").key === "curse" &&
   API.blessingFor(3, "blessing").key === "blessing" &&
+  API.blessingFor(3, "ward").key === "ward" &&
   API.blessingFor(3, "pass").key === "pass",
-  "все три варианта развилки описаны");
+  "все четыре варианта развилки описаны");
 // Третья карточка не должна висеть слева под двумя: она занимает всю
 // ширину сетки и стоит по центру.
 log(/\.bless-card\.pass\s*\{[^}]*grid-column:\s*1\s*\/\s*-1[^}]*justify-self:\s*center/s.test(gameCss),
@@ -3170,7 +3181,23 @@ log(Math.abs(API.curseDmgMul() - API.BLESS.curseEnemyDmg) < 0.001,
 log(API.goldMulForFloor() === API.BLESS.curseGoldMul,
   "золото с монстров удвоено", API.goldMulForFloor());
 
-// «Пройти мимо» — третий вариант развилки: ничего не даёт и ничего не стоит.
+// «Оберег пути»: монстры бьют слабее, но золото за ответы меньше.
+freshRun(6);
+const wardFoe = API.makeEnemy("slime", 4);
+const wardBefore = wardFoe.dmg;
+G.player.gold = 0;
+G.blessingOffer = 6;
+G.enemies = [wardFoe];
+API.chooseBlessing("ward");
+log(G.blessings[6] === "ward" &&
+  Math.abs(API.blessingDamageMul() - API.BLESS.wardEnemyDmg) < 0.001,
+  "оберег пути ослабляет удар монстров", API.blessingDamageMul());
+log(wardFoe.dmg < wardBefore,
+  "уже стоящие монстры тоже ослабевают", wardBefore + " -> " + wardFoe.dmg);
+log(Math.abs(API.goldMulForFloor() - API.BLESS.wardGoldMul) < 0.001,
+  "оберег пути уменьшает золото", API.goldMulForFloor());
+
+// «Пройти мимо» — четвёртый вариант развилки: ничего не даёт и ничего не стоит.
 freshRun(6);
 G.player.gold = 0;
 const passHp = G.player.maxHp;
@@ -3200,6 +3227,18 @@ API.gainLoot("ore", 4);
 log((getProfile(G.name).loot.ore || 0) - quietOre === 5,
   "Тихий спуск даёт больше материалов",
   "было " + quietOre + ", стало " + getProfile(G.name).loot.ore);
+API.pickOmen("harvest");
+log(G.omen === "harvest" && API.goldMulForFloor() < 1,
+  "Каменный урожай смещает добычу в материалы",
+  "золото ×" + API.goldMulForFloor());
+API.pickOmen("greed");
+log(G.omen === "greed" && API.goldMulForFloor() > 1 &&
+  API.eliteCapFor(8) >= steadyCap,
+  "Золотая жила добавляет золото",
+  "золото ×" + API.goldMulForFloor());
+API.pickOmen("calm");
+log(G.omen === "calm" && API.eliteChanceFor(8, false) < steadyChance,
+  "Тихая вода убирает часть элит");
 API.pickOmen("steady");
 log(API.eliteChanceFor(8, false) === steadyChance && API.goldMulForFloor() === 1,
   "Ровный спуск возвращает обычные правила");
@@ -4223,12 +4262,14 @@ log(G.walkTarget === null, "пропуск хода снимает намече�
   log(setKeys.length >= 3, "семей предметов не меньше трёх", setKeys.length + " шт.");
   const badShape = setKeys.filter((key) => {
     const items = API.ITEM_POOL.filter((i) => i.set === key);
-    const slots = items.map((i) => i.slot).sort().join(",");
-    return !(items.length === 3 &&
-      (slots === "accessory,armor,weapon" || slots === "accessory,shield,weapon"));
+    const slots = items.map((i) => i.slot);
+    // Семья — три разные надеваемые вещи. Оружие не обязательно:
+    // защитный комплект может состоять из щита, брони и амулета.
+    return !(items.length === 3 && new Set(slots).size === 3 &&
+      slots.every((slot) => slot !== "potion"));
   });
   log(badShape.length === 0,
-    "в каждой семье по три вещи — оружие, броня или щит и амулет", badShape.join(",") || "все семьи");
+    "в каждой семье три разные надеваемые вещи", badShape.join(",") || "все семьи");
   const unknown = API.ITEM_POOL.filter((i) => i.set && !API.ITEM_SETS[i.set]).map((i) => i.id);
   log(unknown.length === 0, "у каждого предмета семья из списка, а не выдуманная",
     unknown.join(",") || "ок");

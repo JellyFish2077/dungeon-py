@@ -738,6 +738,24 @@
     "Ровный спуск": "Steady descent",
     "Кровавая луна": "Blood moon",
     "Тихий спуск": "Quiet descent",
+    "Каменный урожай": "Stone harvest",
+    "Тихая вода": "Still water",
+    "Золотая жила": "Gold vein",
+    "+50% материалов из жил и сундуков.": "+50% materials from veins and chests.",
+    "Золота с монстров на 20% меньше.": "20% less gold from monsters.",
+    "Монстры бьют на 15% слабее, элит меньше.":
+      "Monsters hit 15% weaker, fewer elites.",
+    "Монстры бьют на 15% слабее, элит меньше. Золота с монстров на 15% меньше.":
+      "Monsters hit 15% weaker, fewer elites. 15% less gold from monsters.",
+    "+40% золота с монстров.": "+40% gold from monsters.",
+    "Материалов на 30% меньше, монстры бьют на 10% сильнее.":
+      "30% fewer materials, monsters hit 10% harder.",
+    "+40% золота с монстров. Материалов на 30% меньше, монстры бьют на 10% сильнее.":
+      "+40% gold from monsters. 30% fewer materials, monsters hit 10% harder.",
+    "Оберег пути": "Path ward",
+    "Монстры этажа бьют на 20% слабее.": "Monsters on this floor hit 20% weaker.",
+    "Золота за ответы на этом этаже на 30% меньше.":
+      "30% less gold from answers on this floor.",
     "Без изменений. Обычные элиты, золото и урон.":
       "No changes. Standard elites, gold and damage.",
     "Элиты чаще, +50% золота с монстров. Монстры бьют на 10% сильнее.":
@@ -1905,6 +1923,13 @@
       }],
     [/^Тёмная сделка · \+(\d+) золота$/, function (m, n) {
       return "Dark bargain · +" + n + " gold";
+    }],
+    [/^Оберег пути: монстры этого этажа бьют на 20% слабее, но золото за ответы здесь — на 30% меньше\.$/,
+      function () {
+        return "Path ward: monsters on this floor hit 20% weaker, but gold from answers here is 30% less.";
+      }],
+    [/^Оберег пути · −20% урона$/, function () {
+      return "Path ward · −20% damage";
     }],
     [/^Каменный дар: \+(\d+) к максимуму здоровья на этом этаже, здоровье восстановлено полностью\. Монстры этажа стали живучее\.$/,
       function (m, n) {

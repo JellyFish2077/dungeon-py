@@ -3276,7 +3276,8 @@
     const base = type.dmg + floorIdx * ENEMY_DMG_PER_FLOOR;
     const ramp = type.dmg * ENEMY_DMG_RAMP * floorIdx;
     return Math.max(1, Math.round((base + ramp) * mul * endlessDepthMul(floorIdx) *
-      depthDamageShare(floorIdx) * ENEMY_DMG_MUL * earlyDamageEase(floorIdx)));
+      depthDamageShare(floorIdx) * ENEMY_DMG_MUL * earlyDamageEase(floorIdx) *
+      blessingDamageMul()));
   }
 
   function makeEnemy(typeKey, floorIdx, elite, squadId, squadIdx, isBoss) {
@@ -5439,8 +5440,9 @@
   // Множитель золота: сделка этажа и знамение похода складываются
   // умножением, а не заменяют друг друга.
   function goldMulForFloor() {
-    const blessing = G.blessings && G.blessings[G.floorIndex] === "curse"
-      ? BLESS.curseGoldMul
+    const chosen = G.blessings ? G.blessings[G.floorIndex] : null;
+    const blessing = chosen === "curse" ? BLESS.curseGoldMul
+      : chosen === "ward" ? BLESS.wardGoldMul
       : 1;
     return blessing * (currentOmen().goldMul || 1) * (1 + (progOf("goldPct") || 0));
   }
@@ -5456,6 +5458,14 @@
     if (G.place && G.place !== "dungeon") return 0;
     const b = blessingOnFloor();
     return b && b.key === "blessing" ? BLESS.blessingHp : 0;
+  }
+
+  // «Оберег пути» ослабляет урон монстров этого этажа. Новые враги
+  // получают множитель при создании, уже стоящие — при выборе сделки.
+  function blessingDamageMul() {
+    if (G.place && G.place !== "dungeon") return 1;
+    const b = blessingOnFloor();
+    return b && b.key === "ward" ? BLESS.wardEnemyDmg : 1;
   }
 
   function snapshotCurrent() {
@@ -8123,6 +8133,14 @@
       log("Тёмная сделка: монстры этого этажа бьют на 35% сильнее, " +
         "но золото с них удваивается. Получено " + BLESS.curseGold + " золота.", "hurt");
       effectFlash("Тёмная сделка · +" + BLESS.curseGold + " золота");
+    } else if (kind === "ward") {
+      (G.enemies || []).forEach((e) => {
+        e.dmg = Math.max(1, Math.round(e.dmg * BLESS.wardEnemyDmg));
+        e.baseDmg = e.dmg;
+      });
+      log("Оберег пути: монстры этого этажа бьют на 20% слабее, но золото " +
+        "за ответы здесь — на 30% меньше.", "loot");
+      effectFlash("Оберег пути · −20% урона");
     } else if (kind === "blessing") {
       // +HP — временный бонус этажа: его даёт floorHpBonus() в recalcStats.
       // При переходе на другой этаж он исчезает вместе с blessingOnFloor().
@@ -8185,7 +8203,10 @@
         " из 5. В третьей фазе он будет крепче.</p>";
     }
     showFloorTitle(index, extra);
-    const ev = typeof floorEvent === "function" ? floorEvent(index, campaign) : null;
+    // Вариант события — от номера похода и этажа: в одном заходе
+    // событие не меняется при повторном входе на этаж.
+    const evVariant = (Math.abs(Number(G.startedAt) || 0) + index * 7) % 3;
+    const ev = typeof floorEvent === "function" ? floorEvent(index, campaign, evVariant) : null;
     if (ev && ev.text) log("Событие: " + ev.text);
     const tip = typeof floorTip === "function" ? floorTip(index, campaign) : null;
     if (tip) log("Совет: " + tip);
@@ -14813,9 +14834,30 @@
       extra: "Золота с монстров на 15% меньше.",
       eliteChance: -0.2, eliteCap: -2, goldMul: 0.85, enemyDmgMul: 1,
       restBonus: 1, materialMul: 1.25
+    },
+    harvest: {
+      key: "harvest", name: "Каменный урожай", icon: "◆",
+      good: "+50% материалов из жил и сундуков.",
+      extra: "Золота с монстров на 20% меньше.",
+      eliteChance: 0, eliteCap: 0, goldMul: 0.8, enemyDmgMul: 1,
+      restBonus: 0, materialMul: 1.5
+    },
+    calm: {
+      key: "calm", name: "Тихая вода", icon: "○",
+      good: "Монстры бьют на 15% слабее, элит меньше.",
+      extra: "Золота с монстров на 15% меньше.",
+      eliteChance: -0.12, eliteCap: -1, goldMul: 0.85, enemyDmgMul: 0.85,
+      restBonus: 0, materialMul: 1
+    },
+    greed: {
+      key: "greed", name: "Золотая жила", icon: "¤",
+      good: "+40% золота с монстров.",
+      extra: "Материалов на 30% меньше, монстры бьют на 10% сильнее.",
+      eliteChance: 0.05, eliteCap: 0, goldMul: 1.4, enemyDmgMul: 1.1,
+      restBonus: 0, materialMul: 0.7
     }
   };
-  const OMEN_KEYS = ["steady", "blood", "quiet"];
+  const OMEN_KEYS = ["steady", "blood", "quiet", "harvest", "calm", "greed"];
 
   function omenDef(key) {
     return OMENS[key] || OMENS.steady;
@@ -17573,6 +17615,18 @@ function topicName(key) {
   // ---------- Обновления ----------
   // Короткая лента новостей для главного меню. Новые записи — сверху.
   const UPDATES = [
+    {
+      version: "1.55.10",
+      date: "17 ноября 2026",
+      title: "Контент: вопросы, события, знамения и снаряжение",
+      items: [
+        "24 новых вопроса: синтаксис, исключения и модули; в банке теперь 332 вопроса.",
+        "На каждом этаже три варианта события — походы перестали повторять одни и те же сцены.",
+        "Три новых знамения: «Каменный урожай», «Тихая вода» и «Золотая жила».",
+        "Четвёртая сделка у алтаря — «Оберег пути»: монстры бьют слабее, но золота меньше.",
+        "10 новых предметов и два сета: «Пламя бездны» и «Стража глубин»."
+      ]
+    },
     {
       version: "1.55.9",
       date: "16 ноября 2026",

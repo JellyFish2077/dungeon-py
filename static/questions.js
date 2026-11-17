@@ -1555,6 +1555,244 @@ const QUESTIONS = [
     answer: 0,
     explanation: "math.sqrt(17) — примерно 4.123, а math.ceil() округляет вверх до целого: 5. Вложенные вызовы выполняются изнутри наружу."
   },
+  {
+    id: 156,
+    topic: "syntax",
+    level: 1,
+    text: "Что делает знак = в выражении hp = 10?",
+    options: ["Записывает значение в переменную", "Сравнивает два значения",
+      "Выводит значение на экран", "Удаляет переменную"],
+    answer: 0,
+    explanation: "Один знак = записывает значение. Для сравнения нужны два: ==."
+  },
+  {
+    id: 157,
+    topic: "syntax",
+    level: 1,
+    text: "Где в Python ставят двоеточие?",
+    options: ["После условия, цикла или объявления функции", "В конце каждой строки",
+      "Только внутри строк", "После каждого print"],
+    answer: 0,
+    explanation: "Двоеточие открывает блок после if, elif, else, for, while, def и try."
+  },
+  {
+    id: 158,
+    topic: "syntax",
+    level: 2,
+    text: "Что выведет этот код?",
+    code: "x = 5\ny = x\nx = 7\nprint(y)",
+    options: ["5", "7", "12", "Ошибка"],
+    answer: 0,
+    explanation: "x и y — разные имена. y получил значение 5, а замена x после этого его не меняет."
+  },
+  {
+    id: 159,
+    topic: "syntax",
+    level: 2,
+    text: "Что выведет этот код?",
+    code: "print(\"2\" + \"3\")",
+    options: ["23", "5", "Ошибка", "2 3"],
+    answer: 0,
+    explanation: "В кавычках — строки, а + склеивает строки: получается «23», а не 5."
+  },
+  {
+    id: 160,
+    topic: "syntax",
+    level: 2,
+    text: "Что выведет этот код?",
+    code: "name = \"Hero\"\nname = name + \"!\"\nprint(name)",
+    options: ["Hero!", "Hero", "!", "Ошибка"],
+    answer: 0,
+    explanation: "Переменная получает новое значение: к старой строке приклеивается восклицательный знак."
+  },
+  {
+    id: 161,
+    topic: "syntax",
+    level: 3,
+    text: "Что выведет этот код?",
+    code: "x, y = 3, 4\nx, y = y, x\nprint(x, y)",
+    options: ["4 3", "3 4", "4 4", "Ошибка"],
+    answer: 0,
+    explanation: "Правая часть считается до присваивания, поэтому x и y обмениваются значениями."
+  },
+  {
+    id: 162,
+    topic: "syntax",
+    level: 3,
+    text: "Что выведет этот код?",
+    code: "x = 10\nif x > 5:\n    x = x + 1\nelse:\n    x = x - 1\nprint(x)",
+    options: ["11", "10", "9", "Ошибка"],
+    answer: 0,
+    explanation: "Условие x > 5 истинно, поэтому выполняется ветка if: 10 + 1 = 11."
+  },
+  {
+    id: 163,
+    topic: "syntax",
+    level: 3,
+    text: "Что выведет этот код?",
+    code: "hp = 10\nhp += 5\nprint(hp)",
+    options: ["15", "105", "5", "Ошибка"],
+    answer: 0,
+    explanation: "hp += 5 — короткая запись hp = hp + 5, поэтому получается 15."
+  },
+  {
+    id: 164,
+    topic: "errors",
+    level: 1,
+    text: "Какая ошибка возникнет, если забыть закрывающую скобку?",
+    code: "print(\"Hello\"",
+    options: ["SyntaxError", "NameError", "ValueError", "TypeError"],
+    answer: 0,
+    explanation: "Незакрытая скобка ломает синтаксис: Python не может разобрать строку."
+  },
+  {
+    id: 165,
+    topic: "errors",
+    level: 1,
+    text: "Какая ошибка возникнет?",
+    code: "print(unknown)",
+    options: ["NameError", "SyntaxError", "TypeError", "ValueError"],
+    answer: 0,
+    explanation: "Имени unknown нигде не присваивали значение."
+  },
+  {
+    id: 166,
+    topic: "errors",
+    level: 2,
+    text: "Какая ошибка возникнет?",
+    code: "print(5 / (2 - 2))",
+    options: ["ZeroDivisionError", "ValueError", "NameError", "TypeError"],
+    answer: 0,
+    explanation: "Скобки дают ноль, а делить на ноль нельзя."
+  },
+  {
+    id: 167,
+    topic: "errors",
+    level: 2,
+    text: "Какая ошибка возникнет?",
+    code: "print(int(\"7.5\"))",
+    options: ["ValueError", "TypeError", "SyntaxError", "ZeroDivisionError"],
+    answer: 0,
+    explanation: "int() не принимает строку с точкой: для такого числа нужен float()."
+  },
+  {
+    id: 168,
+    topic: "errors",
+    level: 2,
+    text: "Какая ошибка возникнет?",
+    code: "print(\"age\" + 18)",
+    options: ["TypeError", "ValueError", "KeyError", "IndexError"],
+    answer: 0,
+    explanation: "Строку и число нельзя сложить: число сначала превращают в строку через str()."
+  },
+  {
+    id: 169,
+    topic: "errors",
+    level: 3,
+    text: "Какая ошибка возникнет?",
+    code: "bag = [1, 2]\nprint(bag[5])",
+    options: ["IndexError", "KeyError", "ValueError", "TypeError"],
+    answer: 0,
+    explanation: "В списке два элемента с номерами 0 и 1, индекса 5 нет."
+  },
+  {
+    id: 170,
+    topic: "errors",
+    level: 3,
+    text: "Какая ошибка возникнет?",
+    code: "hero = {\"hp\": 10}\nprint(hero[\"mp\"])",
+    options: ["KeyError", "IndexError", "ValueError", "TypeError"],
+    answer: 0,
+    explanation: "Ключа mp в словаре нет. Безопасно читать через get(\"mp\", 0)."
+  },
+  {
+    id: 171,
+    topic: "errors",
+    level: 3,
+    text: "Что выведет этот код?",
+    code: "try:\n    print(1 / 0)\nexcept ZeroDivisionError:\n    print(\"caught\")",
+    options: ["caught", "0", "Ошибка", "Ничего"],
+    answer: 0,
+    explanation: "Ошибку ловит except, программа продолжает работу и печатает caught."
+  },
+  {
+    id: 172,
+    topic: "modules",
+    level: 1,
+    text: "Как подключить модуль math?",
+    options: ["import math", "include math", "using math", "require math"],
+    answer: 0,
+    explanation: "Модуль подключают словом import: import math."
+  },
+  {
+    id: 173,
+    topic: "modules",
+    level: 1,
+    text: "Что делает import random?",
+    options: ["Подключает модуль случайных чисел", "Создаёт одно случайное число",
+      "Удаляет модуль random", "Печатает число на экран"],
+    answer: 0,
+    explanation: "import подключает модуль; случайные числа после этого дают его функции."
+  },
+  {
+    id: 174,
+    topic: "modules",
+    level: 1,
+    text: "Какая функция даёт случайное целое от 1 до 6?",
+    options: ["random.randint(1, 6)", "random.random(1, 6)", "math.sqrt(6)", "random.choice(6)"],
+    answer: 0,
+    explanation: "randint(a, b) возвращает целое от a до b включительно."
+  },
+  {
+    id: 175,
+    topic: "modules",
+    level: 2,
+    text: "Что выведет этот код?",
+    code: "import math\nprint(math.ceil(4.1))",
+    options: ["5", "4", "4.1", "Ошибка"],
+    answer: 0,
+    explanation: "math.ceil округляет вверх до ближайшего целого."
+  },
+  {
+    id: 176,
+    topic: "modules",
+    level: 2,
+    text: "Что выведет этот код?",
+    code: "import math\nprint(math.floor(4.9))",
+    options: ["4", "5", "4.9", "Ошибка"],
+    answer: 0,
+    explanation: "math.floor округляет вниз до ближайшего целого."
+  },
+  {
+    id: 177,
+    topic: "modules",
+    level: 2,
+    text: "Что выведет этот код?",
+    code: "from math import sqrt\nprint(sqrt(81))",
+    options: ["9.0", "9", "81", "Ошибка"],
+    answer: 0,
+    explanation: "math.sqrt всегда возвращает float, поэтому печатается 9.0."
+  },
+  {
+    id: 178,
+    topic: "modules",
+    level: 3,
+    text: "Что выведет этот код?",
+    code: "import math\nprint(round(math.pi, 2))",
+    options: ["3.14", "3.1416", "3", "Ошибка"],
+    answer: 0,
+    explanation: "round(x, 2) округляет до двух знаков после точки."
+  },
+  {
+    id: 179,
+    topic: "modules",
+    level: 3,
+    text: "Что выведет этот код?",
+    code: "import math\nprint(math.pow(2, 5))",
+    options: ["32.0", "32", "10", "Ошибка"],
+    answer: 0,
+    explanation: "math.pow возвращает float: 2 в пятой степени — это 32.0."
+  }
 ];
 
 // Понятные названия тем для отчёта

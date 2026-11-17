@@ -85,6 +85,26 @@ const ITEM_SETS = {
     twoText: "+15% золота",
     threeText: "+40% золота и +3 к урону"
   },
+  inferno: {
+    key: "inferno",
+    name: "Пламя бездны",
+    icon: "✹",
+    color: "#f97316",
+    two: { atk: 4 },
+    three: { atk: 8, crit: 0.12 },
+    twoText: "+4 к урону",
+    threeText: "+8 к урону и +12% к шансу крита"
+  },
+  abyss: {
+    key: "abyss",
+    name: "Стража глубин",
+    icon: "◈",
+    color: "#22d3ee",
+    two: { def: 5 },
+    three: { def: 10, hp: 40 },
+    twoText: "+5 к защите",
+    threeText: "+10 к защите и +40 к здоровью"
+  },
   ash: {
     key: "ash",
     name: "Пепел",
@@ -134,6 +154,12 @@ const ITEM_POOL = [
   { id: "dawn_blade", name: "Клинок рассвета", slot: "weapon", atk: 18, rarity: "epic", tier: 4,
     effect: { kind: "crit", chance: 0.2, mul: 2 },
     desc: "Светлый клинок, в котором утренний свет не гаснет даже под землёй." },
+  { id: "ember_blade", name: "Клинок углей", slot: "weapon", atk: 15, rarity: "epic", tier: 3, set: "inferno",
+    effect: { kind: "execute", pct: 30 },
+    desc: "Раскалённая сталь из демонической кузни. Добивает тех, кто уже еле стоит." },
+  { id: "dawn_spear", name: "Копьё рассвета", slot: "weapon", atk: 17, rarity: "epic", tier: 4,
+    effect: { kind: "crit", chance: 0.25, mul: 2 },
+    desc: "Длинное копьё с наконечником цвета утреннего неба. Бьёт точно." },
 
   // ---------- Щиты ----------
   { id: "wooden_shield", name: "Деревянный щит", slot: "shield", hp: 8, def: 0, brace: 0.1, rarity: "common", tier: 0,
@@ -154,6 +180,11 @@ const ITEM_POOL = [
   { id: "aegis", name: "Эгида", slot: "shield", hp: 45, def: 4, brace: 0.25, rarity: "epic", tier: 4,
     effect: { kind: "block", charges: 2 },
     desc: "Щит Афины. Гасит первые две атаки врага в каждом бою и лучше всех держит оборону." },
+  { id: "tower_shield", name: "Башенный щит", slot: "shield", hp: 34, def: 3, brace: 0.2, rarity: "rare", tier: 3,
+    desc: "Ростом почти с героя. За ним удобно пережидать обвал." },
+  { id: "abyss_shield", name: "Щит бездны", slot: "shield", hp: 42, def: 3, brace: 0.24, rarity: "epic", tier: 4, set: "abyss",
+    effect: { kind: "block", charges: 1 },
+    desc: "Тёмный щит со дна. Первый удар в бою гасит полностью." },
 
   // ---------- Броня ----------
   { id: "cloth_robe", name: "Роба послушника", slot: "armor", hp: 10, def: 0, rarity: "common", tier: 0, set: "luck",
@@ -173,6 +204,12 @@ const ITEM_POOL = [
   { id: "warden_plate", name: "Латы хранителя", slot: "armor", hp: 80, def: 10, rarity: "epic", tier: 4,
     effect: { kind: "thorns", pct: 25 },
     desc: "Тяжёлые латы, покрытые шипами изнутри и снаружи. Каждый удар по тебе — и по врагу." },
+  { id: "cinder_mail", name: "Панцирь углей", slot: "armor", hp: 45, def: 4, rarity: "epic", tier: 3, set: "inferno",
+    effect: { kind: "thorns", pct: 15 },
+    desc: "Чешуйчатый панцирь, пропитанный жаром. Бьющий обжигается." },
+  { id: "abyss_plate", name: "Панцирь глубин", slot: "armor", hp: 70, def: 8, rarity: "epic", tier: 4, set: "abyss",
+    effect: { kind: "poisonImmune" },
+    desc: "Пластины со дна бездны. Яд и споры на них не держатся." },
 
   // ---------- Амулеты ----------
   { id: "ring_power", name: "Перстень силы", slot: "accessory", atk: 4, rarity: "uncommon", tier: 1,
@@ -203,6 +240,15 @@ const ITEM_POOL = [
   { id: "heart_abyss", name: "Сердце бездны", slot: "accessory", atk: 7, hp: 50, rarity: "epic", tier: 4,
     effect: { kind: "lifesteal", pct: 12 },
     desc: "Тёмный амулет, который бьётся в такт чужому страху. Возвращает часть урона здоровьем." },
+  { id: "ember_heart", name: "Сердце угля", slot: "accessory", atk: 5, hp: 30, rarity: "epic", tier: 4, set: "inferno",
+    effect: { kind: "crit", chance: 0.15, mul: 2 },
+    desc: "Уголёк, который не гаснет. Иногда удар вспыхивает вдвое сильнее." },
+  { id: "abyss_eye", name: "Око глубины", slot: "accessory", hp: 30, def: 2, rarity: "epic", tier: 4, set: "abyss",
+    effect: { kind: "reveal" },
+    desc: "Видит всех монстров этажа сразу — и на карте, и в тумане." },
+  { id: "master_seal", name: "Печать мастера", slot: "accessory", atk: 3, def: 3, hp: 15, rarity: "epic", tier: 3,
+    effect: { kind: "hintFree", charges: 1 },
+    desc: "Печать старого мастера: одна подсказка в бою не стоит здоровья." },
 
   // ---------- Зелья ----------
   { id: "small_potion", name: "Малое зелье", slot: "potion", heal: 30, rarity: "common", tier: 0,
@@ -223,7 +269,10 @@ const ITEM_POOL = [
     desc: "Лечит 45 HP и смывает яд, который уже попал в кровь." },
   { id: "hint_scroll", name: "Свиток подсказки", slot: "potion", heal: 0, rarity: "rare", tier: 2,
     effect: { kind: "hint" },
-    desc: "Один раз даёт подсказку в бою, не отнимая здоровья." }
+    desc: "Один раз даёт подсказку в бою, не отнимая здоровья." },
+  { id: "steadfast_draught", name: "Настой стойкости", slot: "potion", heal: 50, rarity: "rare", tier: 2,
+    effect: { kind: "cleanse" },
+    desc: "Лечит 50 HP и смывает яд, который уже попал в кровь." }
 ];
 
 function itemById(id) {

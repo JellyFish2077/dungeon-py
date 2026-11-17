@@ -52,7 +52,17 @@
     elixir: ["Dawn Elixir", "Restores all health. More expensive than it looks."],
     greater_elixir: ["Elixir of Last Resort", "Full health and cures poison. There won't be a second chance."],
     purifying_draught: ["Purifying Draught", "Heals 45 HP and washes away poison already in the blood."],
-    hint_scroll: ["Hint Scroll", "Gives one hint in battle without costing health."]
+    hint_scroll: ["Hint Scroll", "Gives one hint in battle without costing health."],
+    ember_blade: ["Ember Blade", "Red-hot steel from a demon forge. Finishes those already barely standing."],
+    dawn_spear: ["Dawn Spear", "A long spear with a tip the colour of the morning sky. It strikes true."],
+    tower_shield: ["Tower Shield", "Almost as tall as the hero. Good for waiting out a cave-in."],
+    abyss_shield: ["Abyss Shield", "A dark shield from the bottom. It fully absorbs the first hit of a battle."],
+    cinder_mail: ["Cinder Mail", "Scaled armour soaked in heat. Whoever strikes it gets burned."],
+    abyss_plate: ["Abyss Plate", "Plates from the abyss floor. Poison and spores do not hold on them."],
+    ember_heart: ["Ember Heart", "A coal that never goes out. Sometimes a hit flares twice as strong."],
+    abyss_eye: ["Abyss Eye", "Sees every monster on the floor at once — on the map and in the fog."],
+    master_seal: ["Master's Seal", "An old master's seal: one hint in battle costs no health."],
+    steadfast_draught: ["Steadfast Draught", "Heals 50 HP and washes away poison already in the blood."]
   };
 
   var sets = {
@@ -61,7 +71,9 @@
     dragon: "Dragon's Legacy",
     blood: "Living Blood",
     luck: "Lucky Share",
-    ash: "Ash"
+    ash: "Ash",
+    inferno: "Inferno's Flame",
+    abyss: "Abyss Ward"
   };
 
   if (typeof ITEM_POOL !== "undefined") {
@@ -169,6 +181,42 @@
   }
   if (typeof FLOOR_EVENTS_V1 !== "undefined") applyList(FLOOR_EVENTS_V1, events);
   if (typeof FLOOR_EVENTS_V2 !== "undefined") applyList(FLOOR_EVENTS_V2, events);
+  // Второй и третий варианты события лежат в more: переводим их отдельными
+  // списками по этажам.
+  var eventMore = [
+    ["Floorboards creak ahead. Someone is carefully counting steps.",
+      "A whisper comes out of the dark: “line, another line, another…”"],
+    ["The wind carries the smell of wet stone and someone else's campfire.",
+      "A draught swirls the dust into a spiral that looks like indentation."],
+    ["The echo repeats your last answer — and this time stays silent.",
+      "Someone invisible asks again: “are you sure?”"],
+    ["A stone crumbles above and goes quiet before reaching the floor.",
+      "Something falls into the dark for a long time — too long."],
+    ["A drop falls into the puddle exactly ten times — and stops.",
+      "The water drains into a crack, leaving a thin pattern on the stone."],
+    ["Torches flare one by one, as if a counter is lighting them.",
+      "A single lamp burns ahead. Someone forgot to put it out."],
+    ["The seal on the floor is worn through the middle, as if rewritten.",
+      "Inside the seal circle lies a piece of charcoal and a scrap of paper."],
+    ["Bones are stacked in a neat list. The last one has a scribble on it.",
+      "The skulls all look one way: toward the stairs."],
+    ["Frost settles on your shoulders. Your breath comes out white.",
+      "Ice crunches underfoot, but it is too even to be accidental."],
+    ["The roar dies down before you can believe in the silence.",
+      "The dragon sighs — and one torch goes out from that sigh."]
+  ];
+  function applyMore(list, values) {
+    if (!list) return;
+    list.forEach(function (item, i) {
+      var row = values[i];
+      if (!item || !row || !Array.isArray(item.more)) return;
+      row.forEach(function (text, j) {
+        if (text && j < item.more.length) item.more[j] = text;
+      });
+    });
+  }
+  if (typeof FLOOR_EVENTS_V1 !== "undefined") applyMore(FLOOR_EVENTS_V1, eventMore);
+  if (typeof FLOOR_EVENTS_V2 !== "undefined") applyMore(FLOOR_EVENTS_V2, eventMore);
 
   var entranceTips = [
     "The first monsters are weak. Answer confidently — it builds experience.",
@@ -1356,6 +1404,17 @@
         "</div><button class='exit-btn' id='updates-close' type='button' " +
         "data-tip='Close updates. Escape.'>Close</button></div>" +
         "<div class='battle-mid updates-body'>" +
+        "<article class='update-entry'>" +
+        "<div class='update-entry-head'><h3>Content: questions, events, omens and gear</h3>" +
+        "<span class='update-version'>v1.55.10</span></div>" +
+        "<div class='update-date'>November 17, 2026</div>" +
+        "<ul>" +
+        "<li>24 new questions on syntax, exceptions and modules; the bank now holds 332.</li>" +
+        "<li>Every floor has three event variants, so runs no longer repeat the same scenes.</li>" +
+        "<li>Three new omens: Stone Harvest, Still Water and Gold Vein.</li>" +
+        "<li>A fourth altar deal — Path Ward: monsters hit weaker, but gold is lower.</li>" +
+        "<li>10 new items and two sets: Inferno's Flame and Abyss Ward.</li>" +
+        "</ul></article>" +
         "<article class='update-entry'>" +
         "<div class='update-entry-head'><h3>Tutorial on the first descent</h3>" +
         "<span class='update-version'>v1.55.9</span></div>" +

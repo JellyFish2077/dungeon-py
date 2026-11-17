@@ -50,7 +50,7 @@ def patch_exports(route):
     resp = route.fetch()
     body = resp.text().replace(
         "window.__pyquiz = G;",
-        "window.__pyquiz = G;"
+        "window.__pyquiz = G; window.__QUESTIONS = QUESTIONS;"
         " window.__openBattle = openBattle; window.__openShop = openShop;"
         " window.__openSchool = openSchool; window.__openLever = openLever;"
         " window.__openAltar = openAltar; window.__restAtCamp = restAtCamp;"
@@ -109,6 +109,19 @@ def main():
 
             open_menu()
             scan(page, "меню")
+            # Весь статический банк и сгенерированные вопросы: невидимые
+            # экраны проверка не ловит, а вопрос всплывает позже — в бою.
+            bad_q = page.evaluate("""() => (window.__QUESTIONS || [])
+                .filter((q) => /[А-Яа-яЁё]/.test(
+                  [q.text, q.code, q.explanation].concat(q.options || []).join(" ")))
+                .map((q) => q.id + ": " + String(q.text || q.code || "").slice(0, 60))""")
+            if bad_q:
+                FAILS.append(("банк вопросов", bad_q))
+                print("[FAIL] банк вопросов: %d" % len(bad_q))
+                for t in bad_q[:8]:
+                    print("       " + t)
+            else:
+                print("[ ok ] банк вопросов (все)")
             for name, selector in (("настройки", "button#menu-settings"),
                                    ("профиль", "button#menu-profile"),
                                    ("об игре", "button#menu-about"),
