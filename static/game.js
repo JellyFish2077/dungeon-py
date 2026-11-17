@@ -2558,6 +2558,8 @@
   let VIEW_RADIUS = 4.4;
   // В «Густой тьме» видно почти вдвое меньше — это и есть её опасность.
   let DARK_VIEW_RADIUS = 2.6;
+  // Туман — между обычным светом и тьмой.
+  let FOG_VIEW_RADIUS = 3.4;
   // Сколько здоровья снимает лава за ход (плюс номер этажа).
   let HAZARD_DMG_BASE = 7;
   // Броня снижает урон В ПРОЦЕНТАХ с убывающей отдачей: soft — значение
@@ -3284,12 +3286,20 @@
     return ENEMY_DMG_EASE0 + (1 - ENEMY_DMG_EASE0) * Math.min(1, at / ENEMY_DMG_EASE_FLOORS);
   }
 
+  // Гроза усиливает удар монстров на всём этаже. Множитель входит в тот
+  // же расчёт, что сложность и сделки, поэтому не ломает их порядок.
+  function hazardDamageMul() {
+    if (G.place && G.place !== "dungeon") return 1;
+    const hz = typeof currentFloorHazard === "function" ? currentFloorHazard() : null;
+    return hz && hz.key === "storm" ? 1.2 : 1;
+  }
+
   function enemyDamageFor(type, floorIdx, mul) {
     const base = type.dmg + floorIdx * ENEMY_DMG_PER_FLOOR;
     const ramp = type.dmg * ENEMY_DMG_RAMP * floorIdx;
     return Math.max(1, Math.round((base + ramp) * mul * endlessDepthMul(floorIdx) *
       depthDamageShare(floorIdx) * ENEMY_DMG_MUL * earlyDamageEase(floorIdx) *
-      blessingDamageMul()));
+      blessingDamageMul() * hazardDamageMul()));
   }
 
   function makeEnemy(typeKey, floorIdx, elite, squadId, squadIdx, isBoss) {
@@ -4488,7 +4498,8 @@
     state.hazard = Array.from({ length: h }, () => new Array(w).fill(""));
     const type = typeof floorHazard === "function"
       ? floorHazard(index, floorDef(index).campaign) : null;
-    if (!type || type.key === "dark") return;
+    // Тьма, туман и гроза действуют на весь этаж — матрицу не заполняем.
+    if (!type || type.key === "dark" || type.key === "fog" || type.key === "storm") return;
     const plan = state.plan;
     const exits = new Set();
     plan.rooms.forEach((room) => {
@@ -5421,16 +5432,24 @@
   function viewRadius() {
     if (G.place !== "dungeon") return VILLAGE_VIEW_RADIUS;
     if (G.arenaDark > 0) return G.arenaDark;
-    return darknessActive() ? DARK_VIEW_RADIUS : VIEW_RADIUS;
+    if (darknessActive()) return DARK_VIEW_RADIUS;
+    const hz = currentFloorHazard();
+    return hz && hz.key === "fog" ? FOG_VIEW_RADIUS : VIEW_RADIUS;
   }
 
   // Лава обжигает в конце каждого хода, пока герой стоит на ней.
   function hazardTick() {
-    if (hazardAt(G.playerPos.x, G.playerPos.y) !== "lava") return 0;
-    const dmg = devGod() ? 0 : armorDamage(HAZARD_DMG_BASE + G.floorIndex);
+    const here = hazardAt(G.playerPos.x, G.playerPos.y);
+    if (here !== "lava" && here !== "embers") return 0;
+    const base = here === "embers"
+      ? Math.max(2, Math.round((HAZARD_DMG_BASE + G.floorIndex) * 0.5))
+      : HAZARD_DMG_BASE + G.floorIndex;
+    const dmg = devGod() ? 0 : armorDamage(base);
+    const name = here === "embers" ? "Угли" : "Лава";
     G.player.hp = Math.max(0, G.player.hp - dmg);
-    setMsg("Лава обжигает: −" + dmg + " здоровья.");
-    log("Лавовый разлом обжёг тебя на " + dmg + ".", "hurt");
+    setMsg(name + " обжигают: −" + dmg + " здоровья.");
+    log((here === "embers" ? "Тлеющие угли обожгли тебя на " : "Лавовый разлом обжёг тебя на ") +
+      dmg + ".", "hurt");
     floatAtHero("-" + dmg, "hurt");
     if (el("map")) shakeEl(el("map"));
     updateHud();
@@ -5880,6 +5899,15 @@
     // Винетка тьмы живёт на вьюпорте, а не на карте: камера держит героя
     // в центре экрана, и темнота должна сгущаться вокруг него.
     el("map-scroll").classList.toggle("hazard-dark", !!hz && hz.key === "dark");
+    el("map-scroll").classList.toggle("hazard-fog", !!hz && hz.key === "fog");
+    el("map-scroll").classList.toggle("hazard-storm", !!hz && hz.key === "storm");
+    // Винетка привязана к герою и видна на экране: туман и гроза
+    // подсвечиваются именно на ней, а не на прокручиваемой карте.
+    const vig = el("map-vignette");
+    if (vig) {
+      vig.classList.toggle("hazard-fog", !!hz && hz.key === "fog");
+      vig.classList.toggle("hazard-storm", !!hz && hz.key === "storm");
+    }
     el("map").classList.add("no-cam-anim");
     // Бонус «Каменного дара» живёт только на своём этаже: при входе на
     // новый этаж максимум здоровья пересчитывается без него.
@@ -9243,7 +9271,8 @@
           }
           const d = isFloor && decor && decor[y] ? decor[y][x] || 0 : 0;
           // Опасная лава — настоящая плитка лавы, а не плёнка поверх пола.
-          const lava = isFloor && hazardAt(x, y) === "lava";
+          const hzCell = isFloor ? hazardAt(x, y) : "";
+          const lava = hzCell === "lava" || hzCell === "embers";
           // Предмет декора живёт отдельным слоем и приглушён (.tile.has-obj).
           let obj = isFloor && d && !lava ? terrainObjectUri(theme, x, y, d) : "";
           // Дверь комнаты и вход в тайник рисуются поверх пола. Запертый
@@ -17627,6 +17656,17 @@ function topicName(key) {
   // ---------- Обновления ----------
   // Короткая лента новостей для главного меню. Новые записи — сверху.
   const UPDATES = [
+    {
+      version: "1.55.12",
+      date: "17 ноября 2026",
+      title: "Три новые угрозы этажей",
+      items: [
+        "«Молочный туман»: обзор уже обычного, но шире, чем во тьме.",
+        "«Тлеющие угли»: плитки, которые обжигают каждый ход вдвое слабее лавы.",
+        "«Грозовые разряды»: монстры этажа бьют на 20% сильнее.",
+        "Новые среды разложены по этажам обеих кампаний; у каждой своя подсказка."
+      ]
+    },
     {
       version: "1.55.11",
       date: "17 ноября 2026",
