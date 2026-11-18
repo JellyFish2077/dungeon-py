@@ -8,7 +8,9 @@ from pathlib import Path
 from PIL import Image
 import colorsys
 
-ROOT = Path(r"C:\Users\JellyFish\Downloads\python-quiz-dev\tools\art")
+# Путь считается от самого скрипта: иначе перекраска работала только на
+# машине автора, а на другой копии репозитория искала несуществующую папку.
+ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "src"
 CUSTOM = ROOT / "src_custom"
 OUT = SRC / "items"
@@ -50,6 +52,12 @@ PLAN = [
     ("tower_shield.png", "items/round_shield.png", 200),
     ("master_seal.png", "items/ledger_amulet.png", 90),
     ("steadfast_draught.png", "items/purifying_draught.png", 45),
+    # Обет зимы и Рассвет: новые сеты из существующих силуэтов.
+    ("frost_axe.png", "items/ash_blade.png", 190),
+    ("frost_bulwark.png", "items/steel_shield.png", 185),
+    ("frost_heart.png", "items/serpent_ward.png", 175),
+    ("dawn_buckler.png", "items/mirror_shield.png", 35),
+    ("dawn_crown.png", "items/crown.png", 20),
 ]
 
 OUT.mkdir(parents=True, exist_ok=True)

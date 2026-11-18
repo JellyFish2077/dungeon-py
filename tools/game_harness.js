@@ -303,6 +303,9 @@
       };
       G.equipment = { weapon: null, shield: null, armor: null, accessory: null };
       G.inventory = [];
+      G.lockpicks = 0;
+      G.chestKeyDrops = [];
+      G.events = [];
       G.stats = {
         correct: 0, wrong: 0, codePassed: 0, codeTried: 0, copyPassed: 0, copyTried: 0,
         hintsUsed: 0, goldEarned: 0, topicStats: {}, floorsCleared: 0, kills: 0
@@ -324,7 +327,7 @@
       // Список повторяет overlayOpen() в game.js: забытый здесь forge-overlay
       // молча ломает doInteract() — сундук «открывается» и не открывается.
       ["end-overlay", "shop-overlay", "battle-overlay", "blessing-overlay", "forge-overlay",
-        "level-loading", "entrance-overlay", "calibration-overlay", "dialog-overlay"]
+        "chest-overlay", "event-overlay", "level-loading", "entrance-overlay", "calibration-overlay", "dialog-overlay"]
         .forEach((id) => el(id).classList.add("hidden"));
       API.activateFloor(floorIndex || 0);
     }

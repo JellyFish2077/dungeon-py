@@ -26,6 +26,7 @@ function rnd() {
 Math.random = rnd;
 
 const OVERLAYS = ["end-overlay", "shop-overlay", "battle-overlay", "blessing-overlay", "forge-overlay",
+  "chest-overlay", "event-overlay",
   "level-loading", "entrance-overlay", "calibration-overlay", "dialog-overlay"];
 const IMMORTAL = 1000000;
 
@@ -162,6 +163,8 @@ const BUILDS = [
   ["золото: фарт (70%)", { weapon: "bone_dagger", shield: "steel_shield", armor: "cloth_robe", accessory: "ledger_amulet" }],
   ["золото: корона (50%)", { weapon: "steel_sword", shield: "steel_shield", armor: "chainmail", accessory: "crown" }],
   ["пепел (3) + эгида", { weapon: "ash_blade", shield: "aegis", armor: "ash_mantle", accessory: "ash_eye" }],
+  ["обет зимы (3)", { weapon: "frost_axe", shield: "frost_bulwark", armor: "chainmail", accessory: "frost_heart" }],
+  ["рассвет (3)", { weapon: "dawn_blade", shield: "dawn_buckler", armor: "chainmail", accessory: "dawn_crown" }],
   ["предел: бездна", { weapon: "dawn_blade", shield: "aegis", armor: "warden_plate", accessory: "heart_abyss" }],
   ["предел: корона", { weapon: "dawn_blade", shield: "aegis", armor: "warden_plate", accessory: "crown" }],
   ["голый герой", {}]

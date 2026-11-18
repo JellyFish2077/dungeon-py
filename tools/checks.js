@@ -3489,6 +3489,9 @@ log(!el("action-btn").classList.contains("hidden"),
   "зато кнопка действия появилась на клетке сундука");
 log(el("action-label").textContent === "Открыть сундук",
   "кнопка подписана сундуком", el("action-label").textContent);
+log(/id="chest-overlay"/.test(gameHtml) && /id="chest-box"/.test(gameHtml) &&
+  /id="event-overlay"/.test(gameHtml) && /id="event-box"/.test(gameHtml),
+  "окна сундука и встречи есть в разметке");
 // Сундук с шансом 2% отдаёт амулет возврата вместо предмета — для проверки
 // этот розыгрыш выключаем, иначе раз в пятьдесят прогонов она ложно падала.
 const chestRandom = Math.random;
@@ -3497,6 +3500,132 @@ API.doInteract();
 Math.random = chestRandom;
 log(G.treasures.length === 0, "по кнопке сундук открылся");
 log(G.inventory.length === invBefore + 1, "предмет из сундука лёг в сумку");
+const chestOpenHtml = el("chest-box").innerHTML;
+log(!el("chest-overlay").classList.contains("hidden") &&
+  /Сундук открыт/.test(chestOpenHtml),
+  "вместо тоста открылось окно находки");
+log(/Золото/.test(chestOpenHtml) && /Надеть сразу/.test(chestOpenHtml),
+  "в окне видны золото и кнопка «Надеть сразу»");
+API.closeChest();
+log(el("chest-overlay").classList.contains("hidden"),
+  "окно находки закрывается кнопкой");
+// Пока окно находки открыто, шаг с клавиатуры и маршрут стоят: раньше герой
+// уходил по карте за спиной окна и мог там погибнуть.
+el("chest-overlay").classList.remove("hidden");
+const chestBlockedAt = { x: G.playerPos.x, y: G.playerPos.y };
+[[1, 0], [-1, 0], [0, 1], [0, -1]].forEach((d) => API.move(d[0], d[1]));
+log(G.playerPos.x === chestBlockedAt.x && G.playerPos.y === chestBlockedAt.y,
+  "открытое окно сундука блокирует шаг", G.playerPos);
+el("chest-overlay").classList.add("hidden");
+// Запертый сундук: без ключа стоит, с ключом открывается и тратит ключ.
+G.enemies = [];
+G.traps = [];
+G.treasures = [{
+  uid: 9001, x: chestSpot.x, y: chestSpot.y, locked: true,
+  item: Object.assign({}, API.ITEM_POOL[0])
+}];
+G.lockpicks = 0;
+API.updateActionButton();
+log(/нужен ключ/.test(el("action-label").textContent),
+  "запертый сундук честно просит ключ", el("action-label").textContent);
+API.doInteract();
+log(G.treasures.length === 1 && G.lockpicks === 0,
+  "без ключа сундук остаётся на карте");
+G.lockpicks = 1;
+const lockRandom = Math.random;
+Math.random = () => 1;
+API.doInteract();
+Math.random = lockRandom;
+log(G.treasures.length === 0 && G.lockpicks === 0,
+  "ключ открывает замок и тратится");
+log(/Замок открыт ключом/.test(el("chest-box").innerHTML),
+  "окно говорит, что замок открыт ключом");
+API.closeChest();
+// Ключ на полу подбирается шагом.
+const keySpot = walkableNeighbours(G.playerPos)[0];
+G.chestKeyDrops = [{ uid: 9002, x: keySpot.x, y: keySpot.y }];
+G.lockpicks = 0;
+API.move(keySpot.x - G.playerPos.x, keySpot.y - G.playerPos.y);
+log(G.lockpicks === 1 && G.chestKeyDrops.length === 0,
+  "ключ на полу подбирается шагом");
+// Случайная встреча: генерация, странник и древний жребий.
+const fakeEventState = {
+  map: { grid: Array.from({ length: 6 }, () => Array(6).fill(1)) },
+  playerPos: { x: 0, y: 0 }, plan: null, hazard: null
+};
+const eventUsed = new Set();
+const eventRandom = Math.random;
+Math.random = () => 0;
+API.placeFloorEvent(fakeEventState, 1, eventUsed, [{ x: 5, y: 5 }]);
+Math.random = eventRandom;
+log(fakeEventState.events.length === 1 &&
+  fakeEventState.events[0].kind === "wanderer",
+  "событие этажа ставится на свободную клетку");
+G.events = [{ uid: 9100, x: G.playerPos.x, y: G.playerPos.y,
+  kind: "wanderer", used: false }];
+G.player.hp = 10;
+G.player.maxHp = 120;
+G.player.gold = 0;
+API.updateActionButton();
+log(/странник/i.test(el("action-label").textContent),
+  "кнопка действия ведёт к страннику", el("action-label").textContent);
+API.openEvent(G.events[0]);
+log(!el("event-overlay").classList.contains("hidden") &&
+  /Странник/.test(el("event-box").innerHTML),
+  "окно странника открывается");
+const eventHp = G.player.hp;
+API.chooseEvent("heal");
+log(G.player.hp > eventHp && G.events.length === 0 &&
+  el("event-overlay").classList.contains("hidden"),
+  "странник лечит и исчезает с карты");
+G.events = [{ uid: 9101, x: G.playerPos.x, y: G.playerPos.y,
+  kind: "gamble", used: false }];
+G.player.hp = 100;
+API.openEvent(G.events[0]);
+API.chooseEvent("gamble");
+log(G.player.hp === 80 && G.events.length === 0 &&
+  /Жребий брошен/.test(el("event-box").innerHTML),
+  "древний жребий берёт 20 HP и показывает результат");
+API.closeEvent();
+// Сундук с выбором: три разные вещи, окно не закрывается до выбора.
+const chestChoices = API.chestChoiceItems(3);
+const choiceSlots = new Set(chestChoices.map((it) => it.slot));
+log(chestChoices.length === 3 && choiceSlots.size === 3,
+  "сундук с выбором предлагает три вещи из разных слотов",
+  chestChoices.map((it) => it.slot).join(","));
+log(API.chestTrapDamage(0) >= 2 && API.chestTrapDamage(0) < G.player.maxHp,
+  "ловушка сундука ранит, но не убивает", API.chestTrapDamage(0));
+const fakeChest = { x: G.playerPos.x, y: G.playerPos.y,
+  item: Object.assign({}, API.ITEM_POOL[0]) };
+G.treasures.push(fakeChest);
+const choiceInvBefore = G.inventory.length;
+API.openChestWindow({ options: chestChoices, chest: fakeChest, pending: true, gold: 0 });
+log(/Сундук с выбором/.test(el("chest-box").innerHTML) &&
+  !el("chest-overlay").classList.contains("hidden"),
+  "сундук с выбором показывает три карточки");
+log(API.closeChest() === false &&
+  !el("chest-overlay").classList.contains("hidden"),
+  "окно выбора не закрывается без награды");
+log(API.chooseChestOption(0) === true &&
+  G.inventory.length === choiceInvBefore + 1 &&
+  G.treasures.indexOf(fakeChest) < 0,
+  "выбранная вещь попала в сумку, а сундук исчез с карты");
+log(/Сундук открыт/.test(el("chest-box").innerHTML),
+  "после выбора окно показывает взятую вещь");
+log(API.closeChest() === true &&
+  el("chest-overlay").classList.contains("hidden"),
+  "после выбора окно закрывается");
+const keyedFloor = API.createFloorState(3);
+const keyedSaved = API.deserializeFloor(API.serializeFloor(keyedFloor));
+log(keyedFloor.chestKeyDrops.length >= 1 &&
+  keyedFloor.treasures.some((t) => t.locked),
+  "на этаже есть ключ на полу и запертый сундук",
+  "ключей: " + keyedFloor.chestKeyDrops.length +
+    ", замков: " + keyedFloor.treasures.filter((t) => t.locked).length);
+log(keyedSaved.chestKeyDrops.length === keyedFloor.chestKeyDrops.length &&
+  keyedSaved.treasures.filter((t) => t.locked).length ===
+    keyedFloor.treasures.filter((t) => t.locked).length,
+  "ключи и замки переживают сохранение");
 API.updateActionButton();
 log(el("action-btn").classList.contains("hidden"),
   "без объекта рядом кнопка снова спрятана");
@@ -4897,6 +5026,28 @@ log(G.walkTarget === null, "пропуск хода снимает намече�
   API.updateHud();
   log(el("inv-stats").innerHTML.indexOf("<b>" + (G.player.dmgBase + G.player.atkBonus) + "</b>") >= 0,
     "«Урон» в сумке обновляется после роста уровня");
+
+  // Сумка «Сундук»: три колонки, четыре слота снаряжения и сетка предметов.
+  const bagItem = (id) => Object.assign({}, API.ITEM_POOL.find((i) => i.id === id));
+  G.equipment = { weapon: null, shield: null, armor: null, accessory: null };
+  G.inventory = [bagItem("small_potion"), bagItem("steel_sword")];
+  G.inventoryFilter = "all";
+  API.renderInventory();
+  const inv2Html = el("inventory-box").innerHTML;
+  log(/inv2-gear/.test(inv2Html) && /inv2-bag/.test(inv2Html) &&
+    /inv2-detail/.test(inv2Html), "сумка собрана в три колонки «Сундук»");
+  log((inv2Html.match(/inv2-gear-card/g) || []).length === 4 &&
+    /inv2-grid/.test(inv2Html) && /inv2-tile/.test(inv2Html),
+    "в сумке четыре слота снаряжения и сетка предметов");
+  log(/inv2-tile is-empty/.test(inv2Html),
+    "пустая сумка добивается гнёздами под будущие находки");
+  G.inventoryFilter = "potion";
+  API.renderInventory();
+  const potionOnly = el("inventory-box").innerHTML;
+  log(/data-inv-select='small_potion'/.test(potionOnly) &&
+    !/data-inv-select='steel_sword'/.test(potionOnly),
+    "фильтр зелий оставляет в сетке только зелья");
+  G.inventoryFilter = "all";
 
   // Заголовки в списке эффектов: «Комплекты» не повторяется.
   const copyItem = (id) => Object.assign({}, API.ITEM_POOL.find((i) => i.id === id));
@@ -6491,6 +6642,13 @@ const deathPct = Math.round(API.balanceSnapshot()["hub.deathGoldShare"] * 100);
 log(mentorHtml.indexOf("на " + deathPct + "%") >= 0 &&
   !/золото[^.]*целиком/i.test(mentorHtml),
   "наставник называет настоящую долю золота после смерти", deathPct + "%");
+const demoTiles = (mentorHtml.match(/mentor-demo-tile/g) || []).length;
+log(demoTiles === 24 && /mentor-demo-map/.test(mentorHtml) &&
+  /token-hero/.test(mentorHtml) && /token-enemy/.test(mentorHtml) &&
+  /token-chest/.test(mentorHtml) && /token-stairs/.test(mentorHtml) &&
+  /Смотреть/.test(mentorHtml),
+  "у наставника есть запись действий с героем, сундуком, врагом и лестницей",
+  demoTiles + " клеток");
 const facadeBad = API.villageBuildingList().filter((b) => b.door.y !== b.box.y1);
 log(facadeBad.length === 0,
   "у всех домов фасад снизу — дома не перевёрнуты",
@@ -6907,8 +7065,10 @@ log(/Кровавая луна/.test(omenHtml) && /Тихий спуск/.test(o
   /Ровный спуск/.test(omenHtml),
   "в окне стража три знамения");
 API.pickOmen("blood");
-log(/class='mode active' data-omen='blood'/.test(el("omen-list").innerHTML),
+log(/class='omen-card active'[^>]*data-omen='blood'/.test(el("omen-list").innerHTML),
   "выбранное знамение подсвечено");
+log(el("summary-omen").textContent === "Кровавая луна",
+  "сводка стража повторяет выбранное знамение", el("summary-omen").textContent);
 API.pickOmen("steady");
 API.closeEntrance();
 log(el("entrance-overlay").classList.contains("hidden"), "окно входа закрывается");
@@ -7054,9 +7214,14 @@ log(API.courseQuestions(examModule, examModule.lessons[0]).length === 5 &&
     API.hubProfile().wallet.gold === beforePracticeGold + 10,
     "практика отмечается и даёт золото");
   API.openSchool();
-  log(/Учитель/.test(el("school-box").innerHTML) &&
-    /Синтаксис/.test(el("school-box").innerHTML),
+  const schoolHtml = el("school-box").innerHTML;
+  log(/Учитель/.test(schoolHtml) && /Синтаксис/.test(schoolHtml),
     "учитель открывает окно курса");
+  log(/school-cabinet/.test(schoolHtml) && /school-cab-next/.test(schoolHtml) &&
+    /school-cab-row/.test(schoolHtml) && /school-px/.test(schoolHtml) &&
+    /dialog-portrait/.test(schoolHtml) &&
+    (schoolHtml.match(/data-school-action='module'/g) || []).length === API.PY_COURSE.length,
+    "кабинет учителя показывает следующий шаг и весь курс");
   API.closeSchool();
   const clean = API.hubProfile();
   clean.wallet.gold = 0;
@@ -7215,11 +7380,11 @@ log(API.heroPrice("hp", 4) === Math.max(1, Math.round(priceBeforeSmith2 * 0.85))
 log(/15%/.test(API.VILLAGE_BUILDINGS.smith.effects[1]()),
   "и окно мастера называет скидку", API.VILLAGE_BUILDINGS.smith.effects[1]());
 
-// Колодец: здоровье в каждом походе.
+// Верстак: здоровье в каждом походе.
 log(payFor("well") && getProfile(G.name).village.well === 1,
-  "колодец восстанавливается за руду");
+  "верстак восстанавливается за руду");
 log(API.progressBonus().hp >= API.balanceSnapshot()["village.wellHp"] + 4 * API.HERO_STEPS.hp,
-  "колодец и улучшения складываются в здоровье героя",
+  "верстак и улучшения складываются в здоровье героя",
   "здоровья " + API.progressBonus().hp);
 
 // Улучшения доезжают до похода: здоровье, урон и зелья на старте.
@@ -7293,9 +7458,21 @@ const planGoal = API.villagePlanGoal();
 log(!!planGoal && planGoal.ready && planGoal.key === "barn",
   "после сюжета подсказка ведёт к первой оплаченной постройке",
   planGoal ? planGoal.title + ": " + planGoal.text : "цели нет");
+API.bankSetTab("village");
 log(/План деревни/.test(API.bankDialogHtml()), "банк показывает план деревни");
 log(/data-build="barn"/.test(API.bankDialogHtml()),
   "и кнопку амбара в нём");
+API.bankSetTab("account");
+log(/bank-wealth/.test(API.bankDialogHtml()) &&
+  /data-bank-tab='account'/.test(API.bankDialogHtml()) &&
+  /data-bank-tab='village'/.test(API.bankDialogHtml()) &&
+  /data-bank-tab='awards'/.test(API.bankDialogHtml()) &&
+  /bank-gold/.test(API.bankDialogHtml()),
+  "банк-штаб: счёт слева и вкладки «Счёт», «Деревня», «Награды»");
+API.bankSetTab("awards");
+log(/bank-badges/.test(API.bankDialogHtml()) && /ach-card/.test(API.bankDialogHtml()),
+  "во вкладке наград видны достижения");
+API.bankSetTab("account");
 log(API.buildReadyFor("barn") && API.buildReadyFor("well"),
   "у оплаченных построек появляется метка «!»");
 
@@ -7643,6 +7820,9 @@ payFor("forge");
 give({}, 3000);
 log(/Уровень 0 из 3/.test(API.forgeDialogHtml()) && /upg-buy/.test(API.forgeDialogHtml()),
   "а с кузницей показывает улучшения");
+log(/forge-layout/.test(API.forgeDialogHtml()) && /forge-side/.test(API.forgeDialogHtml()) &&
+  /forge-totals/.test(API.forgeDialogHtml()) && /forge-card/.test(API.forgeDialogHtml()),
+  "кузнец показывает сводку и карточки улучшений");
 const goldBeforeBuy = getProfile(G.name).wallet.gold;
 API.buyHeroUpgrade("dmg");
 log(getProfile(G.name).hero.dmg === 1 && getProfile(G.name).wallet.gold < goldBeforeBuy,
@@ -7651,18 +7831,32 @@ log(getProfile(G.name).hero.dmg === 1 && getProfile(G.name).wallet.gold < goldBe
 API.enterHouse("barn");
 log(/На складе:/.test(API.barnDialogHtml()) && /руда/.test(API.barnDialogHtml()),
   "кладовщик показывает склад материалов");
+log(/barn-layout/.test(API.barnDialogHtml()) && /barn-materials/.test(API.barnDialogHtml()) &&
+  /barn-offer/.test(API.barnDialogHtml()) && /barn-buy/.test(API.barnDialogHtml()),
+  "склад показывает материалы, амбар и карточки обмена");
 API.enterHouse("smith");
-log(/верстак снова в деле/.test(API.masterDialogHtml()),
-  "мастер рассказывает про верстак");
+log(/master-layout/.test(API.masterDialogHtml()) &&
+  /master-cap/.test(API.masterDialogHtml()) &&
+  /master-abilities/.test(API.masterDialogHtml()) &&
+  /Печать мастера/.test(API.masterDialogHtml()),
+  "мастер показывает потолок улучшений, умения и печать");
 
 // Квестовый блок старосты: шаг сюжета и поручения — в его окне.
 API.enterVillage(null);
 const elderHtml = API.elderDialogHtml();
 log(/Кампания · Печати глубины/.test(elderHtml) && /Поручения/.test(elderHtml),
   "в окне старосты есть кампания и поручения");
-log(/Завершить главу|Цель:|Взять задание/.test(elderHtml),
+log(/Завершить главу|Цель|Взять задание/.test(elderHtml),
   "и понятно, что делать дальше",
   (/Завершить главу/.test(elderHtml) ? "можно сдать" : "цель или поручение"));
+log(/elder-chronicle/.test(elderHtml) && /elder-chapter/.test(elderHtml) &&
+  /data-elder-tab='story'/.test(elderHtml) && /data-elder-tab='tasks'/.test(elderHtml),
+  "староста показывает летопись глав и вкладки кампании и поручений");
+API.elderSetTab("tasks");
+log(/elder-task-grid/.test(API.elderDialogHtml()) ||
+  /elder-task active/.test(API.elderDialogHtml()),
+  "во вкладке поручений видны задания");
+API.elderSetTab("story");
 
 // Профиль переживает круговорот: находки, уровни и квесты не теряются.
 const roundTrip = progressMerge(progressEmpty(), getProfile(G.name));
@@ -7722,9 +7916,9 @@ log(new Set(npcUris).size === npcUris.length,
   "спрайты жителей разные, а не один и тот же",
   "разных картинок: " + new Set(npcUris).size + " из " + npcUris.length);
 
-// Двор: бочка, поленница, забор, колодец, костёр, указатель и мебель
+// Двор: бочка, поленница, забор, верстак, костёр, указатель и мебель
 // имеют тайлы, а не заглушки.
-const yardMissing = ["barrel", "woodpile", "fence", "well", "campfire", "chimney",
+const yardMissing = ["barrel", "woodpile", "fence", "workbench", "campfire", "chimney",
   "sign", "table", "chair", "crate", "anvil"]
   .filter((k) => !API.mapIcon(k) || API.mapIcon(k).indexOf("<svg") === 0);
 log(yardMissing.length === 0, "у двора настоящие тайлы, а не схематичные значки",
@@ -7732,13 +7926,17 @@ log(yardMissing.length === 0, "у двора настоящие тайлы, а �
 
 // Декор не только объявлен, но и стоит на карте: деревья, заборы, бочки,
 // поленницы, мебель у костра и наковальня у кузницы.
-const decorWanted = ["tree", "fence", "barrel", "woodpile", "sign",
+const decorWanted = ["tree", "fence", "barrel", "woodpile", "workbench", "sign",
   "table", "chair", "crate", "anvil"];
 const decorHave = new Set((G.scenery || []).map((o) => o.kind));
 const decorMissing = decorWanted.filter((k) => !decorHave.has(k));
 log(decorMissing.length === 0,
   "в деревне есть уличный декор: деревья, заборы, бочки, поленницы и мебель",
   decorMissing.join(", ") || "все виды декора на карте");
+log((G.scenery || []).some((o) => o.kind === "workbench" && o.x === 14 && o.y === 8),
+  "на месте колодца стоит верстак",
+  (G.scenery || []).filter((o) => o.kind === "workbench" || o.kind === "well")
+    .map((o) => o.x + "," + o.y).join("; ") || "верстака нет");
 
 // Лавка торговца, банк и потолок амулетов — те же функции, что и раньше.
 // Банк возвращаем к исходной сумме: покупки в окнах выше уже тратили золото.
@@ -7753,6 +7951,74 @@ log(hubOffers.some((o) => o.kind === "small_potion" || o.kind === "big_potion"),
   "и зелья");
 const gearOffer = hubOffers.find((o) => o.kind.indexOf("gear:") === 0);
 log(!!gearOffer, "и стартовое снаряжение");
+log(!!gearOffer && !!gearOffer.item &&
+  API.itemBonusText(gearOffer.item).length > 0,
+  "у товара торговца видны характеристики",
+  gearOffer && gearOffer.item ? API.itemBonusText(gearOffer.item) : "нет предмета");
+const traderNpcForShop = API.VILLAGE_NPCS.find((n) => n.key === "trader");
+const traderShopHtml = API.dialogHtml(traderNpcForShop);
+log(/trader-summary/.test(traderShopHtml) && /trader-layout/.test(traderShopHtml) &&
+  /trader-item/.test(traderShopHtml) && /Оружие/.test(traderShopHtml) &&
+  /Щиты/.test(traderShopHtml),
+  "витрина торговца сгруппирована по слотам");
+
+// Сортировка и сравнение забраны из третьего макета. Проверяем не только
+// разметку кнопок, но и настоящий порядок товаров после нажатия.
+API.traderSetCategory("all");
+const traderAllHtml = API.dialogHtml(traderNpcForShop);
+log(/data-trader-sort='price'/.test(traderAllHtml) &&
+  /data-trader-sort='slot'/.test(traderAllHtml) &&
+  /data-trader-cat='all'/.test(traderAllHtml) &&
+  /Всё/.test(traderAllHtml),
+  "в прилавке есть категория «Всё» и сортировка по цене и слоту");
+const traderKinds = (html) =>
+  [...html.matchAll(/data-trader-select='([^']+)'/g)].map((m) => m[1]);
+const shopNow = API.hubShopOffers();
+const priceOfKind = (kind) => {
+  const offer = shopNow.find((o) => o.kind === kind);
+  return offer ? offer.price : 0;
+};
+API.traderSetSort("price");
+const priceKinds = traderKinds(API.dialogHtml(traderNpcForShop));
+const priceSorted = priceKinds.every((kind, i) =>
+  i === 0 || priceOfKind(priceKinds[i - 1]) <= priceOfKind(kind));
+log(priceKinds.length === shopNow.length && priceSorted,
+  "сортировка по цене ставит дешёвые товары первыми", priceKinds.join(", "));
+const slotRank = { potion: 0, weapon: 1, shield: 2, armor: 3, accessory: 4 };
+const slotOfKind = (kind) => {
+  const offer = shopNow.find((o) => o.kind === kind);
+  return offer && offer.item ? (slotRank[offer.item.slot] || 0) : 0;
+};
+API.traderSetSort("slot");
+const slotKinds = traderKinds(API.dialogHtml(traderNpcForShop));
+const slotSorted = slotKinds.every((kind, i) =>
+  i === 0 || slotOfKind(slotKinds[i - 1]) <= slotOfKind(kind));
+log(slotKinds.length === shopNow.length && slotSorted,
+  "сортировка по слоту ведёт зелья, оружие, щиты, броню и амулеты по порядку",
+  slotKinds.join(", "));
+
+// Сравнение идёт с тем, что уже лежит в дороге, и не притворяется оценкой.
+const profCompare = getProfile(G.name);
+const gearWas = (profCompare.hub.gear || []).slice();
+profCompare.hub.gear = ["rusty_sword"];
+putProfile(G.name, profCompare);
+const daggerOffer = shopNow.find((o) => o.kind === "gear:bone_dagger");
+const daggerCmp = API.traderCompareHtml(daggerOffer, getProfile(G.name));
+log(/Сравнение с дорогой/.test(daggerCmp) && /Ржавый меч/.test(daggerCmp) &&
+  /атака \+2/.test(daggerCmp) && /набор:/.test(daggerCmp),
+  "сравнение показывает разницу с вещью того же слота", daggerCmp);
+const armorOffer = shopNow.find((o) => o.item && o.item.slot === "armor");
+const armorCmp = API.traderCompareHtml(armorOffer, getProfile(G.name));
+log(/нет вещей этого слота/.test(armorCmp),
+  "для пустого слота сравнение честно говорит, что сравнивать не с чем",
+  armorCmp);
+const potionOffer = shopNow.find((o) => o.item && o.item.slot === "potion");
+log(API.traderCompareHtml(potionOffer, getProfile(G.name)) === "",
+  "зелья не сравниваются по статам");
+profCompare.hub.gear = gearWas;
+putProfile(G.name, profCompare);
+API.traderSetCategory("weapon");
+API.traderSetSort("price");
 
 API.buyHubItem("amulet");
 log(getProfile(G.name).hub.revive === 1, "амулет куплен",
@@ -7765,6 +8031,12 @@ if (gearOffer) {
   API.buyHubItem(gearOffer.kind);
   log(getProfile(G.name).hub.gear.length === 1, "купленное снаряжение ждёт похода",
     String(getProfile(G.name).hub.gear.length));
+  const gearId = gearOffer.kind.slice(5);
+  const hadSame = getProfile(G.name).hub.gear.filter((id) => id === gearId).length;
+  API.buyHubItem(gearOffer.kind);
+  log(getProfile(G.name).hub.gear.filter((id) => id === gearId).length === hadSame,
+    "повторная покупка не дублирует вещь",
+    String(getProfile(G.name).hub.gear.filter((id) => id === gearId).length));
 }
 
 // Потолок: выше amuletCap() ни покупка, ни находка не поднимают. Здесь деревня

@@ -222,13 +222,16 @@ def hold_scenario(page):
     page.wait_for_timeout(1600)
     auto = page.evaluate("() => ({ ...window.__pyquiz.playerPos })")
     page.keyboard.up("a")
+    # Снимок сразу после keyup: тик, который успел пройти до отпускания,
+    # не должен считаться движением «после отпускания».
+    released = page.evaluate("() => ({ ...window.__pyquiz.playerPos })")
     page.wait_for_timeout(250)
     stopped = page.evaluate("() => ({ ...window.__pyquiz.playerPos })")
     check(one.get("x") != start.get("x") or one.get("y") != start.get("y"),
           "удержание: первый шаг сразу", "%s -> %s" % (start, one))
     check(auto.get("x") != one.get("x") or auto.get("y") != one.get("y"),
           "удержание: после паузы включается автоповтор", "%s -> %s" % (one, auto))
-    check(stopped == auto, "удержание: после отпускания движение стоит", "%s -> %s" % (auto, stopped))
+    check(stopped == released, "удержание: после отпускания движение стоит", "%s -> %s" % (released, stopped))
 
 
 def run_scenarios(browser, base):

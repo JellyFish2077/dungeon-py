@@ -5,7 +5,7 @@
 //
 // Легенда (совпадает с VILLAGE_TILES ниже):
 //   #  стена дома (не пройти)      .  трава                  p  дорожка
-//   T  дерево (не пройти)          F  забор (не пройти)      W  колодец (не пройти)
+//   T  дерево (не пройти)          F  забор (не пройти)      W  верстак (не пройти)
 //   C  костёр (пройти можно)       D  дверь в дом            d  запертая дверь
 //   S  табличка/указатель (пройти можно, текст — в VILLAGE_SIGNS)
 //   i  пол внутри дома (в деревне не встречается)
@@ -79,7 +79,7 @@ const VILLAGE_GROUND = 10;
 
 // Значение клетки: пол/стена, код декора и необязательный объект.
 //   floor: 0 — стена, 1 — пол
-//   kind:  "door" | "locked" | "entrance" | "tree" | "fence" | "well" | "fire"
+//   kind:  "door" | "locked" | "entrance" | "tree" | "fence" | "workbench" | "fire"
 //   blocked: true — сквозь клетку не пройти (стены задаёт сам grid)
 const VILLAGE_TILES = {
   "#": { floor: 0 },
@@ -90,7 +90,7 @@ const VILLAGE_TILES = {
   "p": { floor: 1 },
   "T": { floor: 1, decor: 1, kind: "tree", blocked: true },
   "F": { floor: 1, decor: 1, kind: "fence", blocked: true },
-  "W": { floor: 1, decor: 1, kind: "well", blocked: true },
+  "W": { floor: 1, decor: 1, kind: "workbench", blocked: true },
   "C": { floor: 1, decor: 1, kind: "fire" },
   // Двор: бочка и поленница. Обе не пропускают — это утварь, а не ковёр.
   "o": { floor: 1, decor: 1, kind: "barrel", blocked: true },
@@ -443,7 +443,7 @@ const NPC_GREETINGS = {
 
 // Разбор раскладки в ту же форму, что отдаёт generateMap в game.js:
 // { w, h, grid, decor, objects }. objects — всё, что стоит на клетке:
-// двери, вход, деревья, колодец и НПС-маркеры.
+// двери, вход, деревья, верстак и НПС-маркеры.
 function villageParseMap(rows) {
   if (!Array.isArray(rows) || !rows.length) throw new Error("деревня: пустая раскладка");
   const h = rows.length;

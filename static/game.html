@@ -156,6 +156,7 @@
           <span class="action-key">Пробел</span>
         </button>
         <div class="minimap-dock" id="minimap-dock">
+          <div class="minimap-head"><span>Карта</span><b id="minimap-place">Этаж 1</b></div>
           <canvas class="minimap" id="minimap" width="280" height="210" data-tip="Мини-карта этажа: где герой, лестница и живые монстры. Клавиша M."></canvas>
           <div class="minimap-controls" id="minimap-controls" role="group" aria-label="Масштаб мини-карты">
             <button class="minimap-zoom-btn" id="minimap-zoom-out" type="button" aria-label="Уменьшить масштаб мини-карты">−</button>
@@ -275,61 +276,118 @@
         </div>
         <button class="exit-btn" id="entrance-close" type="button" data-tip="Закрыть. Клавиша Escape.">Закрыть</button>
       </div>
-      <p class="lead">Внизу ждут вопросы и задачи по Python. Выбери сложность и режим.</p>
-      <label class="check">
-        <input type="checkbox" id="claim-box" checked />
-        <span class="check-box" aria-hidden="true"></span>
-        <span class="check-text">Взять золото и зелья из банка в этот поход</span>
-      </label>
-      <div class="pick">
-        <p class="pick-label" id="label-mode">Режим похода</p>
-        <div class="modes" id="game-mode" role="radiogroup" aria-labelledby="label-mode">
-          <div class="mode active" data-mode="dungeon" role="radio" aria-checked="true" tabindex="0">
-            <span class="mode-mark" aria-hidden="true"></span>
-            <b>Обычный спуск</b>
-            <span class="mode-note">15 этажей до дракона. Победа закрывает поход</span>
-          </div>
-          <div class="mode" data-mode="endless" role="radio" aria-checked="false" tabindex="0">
-            <span class="mode-mark" aria-hidden="true"></span>
-            <b>Бесконечное подземелье</b>
-            <span class="mode-note">После дракона этажи не кончаются — спуск идёт, пока герой жив</span>
-          </div>
+
+      <div class="entrance-body">
+        <div class="entrance-main">
+          <p class="entrance-lead">Выбери, как пройдёт этот спуск. Настройки можно менять у стража до первого шага.</p>
+
+          <section class="entrance-section">
+            <div class="entrance-section-head">
+              <span class="entrance-num">01</span>
+              <span class="entrance-section-copy"><b>Сложность</b><span>Насколько сильные враги и вопросы</span></span>
+            </div>
+            <div class="modes entrance-diffs" id="difficulty" role="radiogroup" aria-label="Уровень сложности">
+              <div class="mode" data-diff="easy" role="radio" aria-checked="false" tabindex="0">
+                <span class="mode-mark" aria-hidden="true"></span>
+                <b>Лёгкий</b>
+                <span class="mode-note">Вопросы на ступень ниже, враги слабее, без def и поиска ошибок</span>
+              </div>
+              <div class="mode active" data-diff="normal" role="radio" aria-checked="true" tabindex="0">
+                <span class="mode-mark" aria-hidden="true"></span>
+                <b>Обычный</b>
+                <span class="mode-note">Вопросы и задачи по Python, обычные враги, «найди ошибку» и иногда def</span>
+              </div>
+              <div class="mode" data-diff="hard" role="radio" aria-checked="false" tabindex="0">
+                <span class="mode-mark" aria-hidden="true"></span>
+                <b>Сложный</b>
+                <span class="mode-note">Больше кода и функций, враги в 1,5 раза сильнее, вопросы на ступень выше</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="entrance-section">
+            <div class="entrance-section-head">
+              <span class="entrance-num">02</span>
+              <span class="entrance-section-copy"><b>Режим</b><span>Где заканчивается этот спуск</span></span>
+            </div>
+            <div class="modes entrance-modes" id="game-mode" role="radiogroup" aria-label="Режим похода">
+              <div class="mode active" data-mode="dungeon" role="radio" aria-checked="true" tabindex="0">
+                <span class="mode-mark" aria-hidden="true"></span>
+                <b>Обычный спуск</b>
+                <span class="mode-note">15 этажей до дракона. Победа закрывает поход</span>
+              </div>
+              <div class="mode" data-mode="endless" role="radio" aria-checked="false" tabindex="0">
+                <span class="mode-mark" aria-hidden="true"></span>
+                <b>Бесконечное подземелье</b>
+                <span class="mode-note">После дракона этажи не кончаются — спуск идёт, пока герой жив</span>
+              </div>
+            </div>
+          </section>
+
+          <details class="entrance-section entrance-details" id="omen-section" open>
+            <summary class="entrance-section-head">
+              <span class="entrance-num">03</span>
+              <span class="entrance-section-copy"><b>Знамение</b><span>Характер похода: награда против риска</span></span>
+              <span class="entrance-current" id="omen-current">Ровный спуск</span>
+              <span class="entrance-chevron" aria-hidden="true">▾</span>
+            </summary>
+            <div class="pick" id="omen-pick">
+              <div class="modes entrance-omens" id="omen-list" role="radiogroup" aria-label="Знамение похода"></div>
+              <p class="mode-note entrance-note" id="omen-note"></p>
+            </div>
+          </details>
+
+          <details class="entrance-section entrance-details" id="ability-section" open>
+            <summary class="entrance-section-head">
+              <span class="entrance-num">04</span>
+              <span class="entrance-section-copy"><b>Умение</b><span>Одно на поход, заряды пополняются у костра</span></span>
+              <span class="entrance-current" id="ability-current">Прозрение</span>
+              <span class="entrance-chevron" aria-hidden="true">▾</span>
+            </summary>
+            <div class="pick hidden" id="ability-pick">
+              <div class="modes entrance-abilities" id="ability-list" role="radiogroup" aria-label="Умение похода"></div>
+              <p class="mode-note entrance-note" id="ability-note"></p>
+            </div>
+          </details>
+
+          <label class="check entrance-claim">
+            <input type="checkbox" id="claim-box" checked />
+            <span class="check-box" aria-hidden="true"></span>
+            <span class="check-text">Взять золото и зелья из банка в этот поход</span>
+          </label>
         </div>
-      </div>
-      <div class="pick">
-        <p class="pick-label" id="label-diff">Уровень сложности</p>
-        <div class="modes" id="difficulty" role="radiogroup" aria-labelledby="label-diff">
-          <div class="mode" data-diff="easy" role="radio" aria-checked="false" tabindex="0">
-            <span class="mode-mark" aria-hidden="true"></span>
-            <b>Лёгкий</b>
-            <span class="mode-note">Вопросы, «повтори код» и «вставь пропущенное». Без def</span>
+
+        <aside class="entrance-side">
+          <div class="entrance-pause hidden" id="pause-card">
+            <span class="entrance-pause-kicker">Поход на паузе</span>
+            <b class="entrance-pause-title" id="pause-title">Этаж 1 · 0 золота</b>
+            <span class="entrance-pause-meta" id="pause-meta"></span>
+            <div class="entrance-pause-actions">
+              <button class="btn primary" id="resume-btn" type="button" style="display:none">Продолжить</button>
+              <button class="btn ghost" id="retreat-btn" type="button" style="display:none">Свернуть поход</button>
+            </div>
           </div>
-          <div class="mode active" data-diff="normal" role="radio" aria-checked="true" tabindex="0">
-            <span class="mode-mark" aria-hidden="true"></span>
-            <b>Обычный</b>
-            <span class="mode-note">Плюс «найди ошибку» и иногда написание функции (def)</span>
+          <p class="entrance-or hidden" id="entrance-or"><span>или новый поход</span></p>
+
+          <div class="entrance-summary">
+            <div class="summary-kicker">Сводка похода</div>
+            <div class="summary-diff" id="summary-diff">Обычный</div>
+            <p class="summary-note" id="summary-note"></p>
+            <dl class="summary-list">
+              <div><dt>Режим</dt><dd id="summary-mode">Обычный спуск</dd></div>
+              <div><dt>Знамение</dt><dd id="summary-omen">Ровный спуск</dd></div>
+              <div><dt>Умение</dt><dd id="summary-ability">Прозрение</dd></div>
+              <div><dt>Банк</dt><dd id="summary-bank">—</dd></div>
+              <div><dt>Привалы</dt><dd id="summary-rests">1</dd></div>
+            </dl>
+            <p class="summary-risk hidden" id="summary-risk"></p>
+            <div class="setup-actions entrance-actions">
+              <button class="btn primary" id="begin-btn" type="button">Спуститься</button>
+              <button class="btn ghost" id="entrance-close-side" type="button">Закрыть</button>
+            </div>
+            <p class="summary-foot">Поход сохранится у стража, если подняться на поверхность.</p>
           </div>
-          <div class="mode" data-diff="hard" role="radio" aria-checked="false" tabindex="0">
-            <span class="mode-mark" aria-hidden="true"></span>
-            <b>Сложный</b>
-            <span class="mode-note">Много заданий на код и функций, сильные монстры</span>
-          </div>
-        </div>
-      </div>
-      <div class="pick hidden" id="ability-pick">
-        <p class="pick-label">Умение похода</p>
-        <div class="modes" id="ability-list" role="radiogroup" aria-label="Умение похода"></div>
-        <p class="mode-note" id="ability-note"></p>
-      </div>
-      <div class="pick" id="omen-pick">
-        <p class="pick-label">Знамение похода</p>
-        <div class="modes" id="omen-list" role="radiogroup" aria-label="Знамение похода"></div>
-        <p class="mode-note" id="omen-note"></p>
-      </div>
-      <div class="setup-actions">
-        <button class="btn" id="begin-btn" type="button">Спуститься</button>
-        <button class="btn ghost" id="resume-btn" type="button" style="display:none">Продолжить</button>
-        <button class="btn ghost" id="retreat-btn" type="button" style="display:none">Свернуть поход</button>
+        </aside>
       </div>
     </div>
   </div>
@@ -378,6 +436,16 @@
 
   <div class="overlay hidden" id="forge-overlay">
     <div class="battle inventory" id="forge-box"></div>
+  </div>
+
+  <!-- Находка из сундука: что выпало, сравнение с надетым и «надеть сразу». -->
+  <div class="overlay hidden" id="chest-overlay">
+    <div class="battle inventory chest-open" id="chest-box"></div>
+  </div>
+
+  <!-- Случайная встреча этажа: странник или древний жребий. -->
+  <div class="overlay hidden" id="event-overlay">
+    <div class="battle inventory event-open" id="event-box"></div>
   </div>
 
   <!-- Стартовое меню: один вертикальный список. Настройки, профиль и «Об игре» —

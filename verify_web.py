@@ -377,6 +377,23 @@ def run_mobile_checks(browser, base):
         check(hud_open == "none" and skip_open == "none",
               "при открытой панели HUD и кнопка хода не мешают (%s)" % name,
               {"hud": hud_open, "skip": skip_open})
+        if w <= 720:
+            page.locator("#panel-inventory .inv2-tile").first.click()
+            page.wait_for_timeout(250)
+            sheet_open = page.evaluate(
+                "() => document.getElementById('inv-sheet')"
+                ".classList.contains('is-open')")
+            sheet = page.evaluate(script, "#inv-sheet .inv-sheet-box")
+            check(sheet_open and sheet and sheet["x"] >= -1 and
+                  sheet["right"] <= w + 1 and sheet["bottom"] <= h + 2,
+                  "карточка предмета открывается снизу и влезает в экран (%s)" % name,
+                  sheet)
+            page.click("#inv-sheet .inv-sheet-close")
+            page.wait_for_timeout(200)
+            check(not page.evaluate(
+                "() => document.getElementById('inv-sheet')"
+                ".classList.contains('is-open')"),
+                "карточка предмета закрывается (%s)" % name)
         page.click("#panel-inventory [data-panel-close]")
         page.wait_for_timeout(300)
 
@@ -497,7 +514,7 @@ def run_checks(browser, base):
         " })"),
         "верхние кнопки без фоновых иконок, текст по центру")
     nav_labels = page.locator("#game-nav .nav-btn").all_inner_texts()
-    check(nav_labels == ["Этаж", "Инвентарь", "Журнал"],
+    check([x.lower() for x in nav_labels] == ["этаж", "инвентарь", "журнал"],
           "в верхнем меню остались Этаж, Инвентарь и Журнал", nav_labels)
     check(page.evaluate(
         "async () => {"
@@ -645,7 +662,7 @@ def run_checks(browser, base):
     check(page.locator("#panel-inventory .inv-equip-slot").count() == 0,
           "в сумке нет дублирующих ячеек снаряжения")
     page.click('#panel-inventory [data-inv-filter="potion"]')
-    check("Зелья" in page.locator("#panel-inventory .inv-tab.is-active").inner_text(),
+    check("зелья" in page.locator("#panel-inventory .inv-tab.is-active").inner_text().lower(),
           "фильтр зелий переключается")
     page.click("#panel-inventory .panel-close")
     check(page.locator("#minimap").is_visible(),
@@ -700,6 +717,24 @@ def run_checks(browser, base):
           "страж открывается отдельным действием")
     focused = page.evaluate("() => document.activeElement && document.activeElement.id")
     check(focused in ("begin-btn", "resume-btn"), "фокус в окне стража", focused)
+    fit = page.evaluate("""() => {
+        const box = document.getElementById("entrance-box");
+        const main = document.querySelector(".entrance-main");
+        const side = document.querySelector(".entrance-side");
+        return {
+            box: box.scrollHeight - box.clientHeight,
+            main: main.scrollHeight - main.clientHeight,
+            side: side.scrollHeight - side.clientHeight,
+            doc: document.documentElement.scrollHeight - document.documentElement.clientHeight,
+            omenOpen: document.getElementById("omen-section").open
+        };
+    }""")
+    check(fit["box"] <= 1 and fit["main"] <= 1 and fit["side"] <= 1 and fit["doc"] <= 1,
+          "окно стража помещается без прокрутки", fit)
+    check(fit["omenOpen"], "на десктопе знамения раскрыты")
+    check(page.locator("#summary-diff").inner_text() == "Обычный" and
+          page.locator("#summary-mode").inner_text() == "Обычный спуск",
+          "сводка похода показывает выбранную сложность и режим")
     check(page.locator("#calibration-btn").count() == 0 and
           page.locator("#knowledge-line").count() == 0,
           "в публичном входе нет проверки знаний")
@@ -759,7 +794,9 @@ def run_checks(browser, base):
     check("Деревня" in page.locator("#saves-detail .save-detail-meta").inner_text(),
           "у сохранения есть описание")
     action_labels = page.locator("#saves-detail .saves-btn").all_inner_texts()
-    check(action_labels == ["Перезаписать", "Переименовать", "Удалить"],
+    # Кнопки в пиксельной теме набраны капсом; сравниваем без регистра.
+    check([x.lower() for x in action_labels] ==
+          ["перезаписать", "переименовать", "удалить"],
           "кнопки ячейки: перезаписать, переименовать, удалить", action_labels)
     page.click("#saves-detail [data-do='rename']")
     page.fill("#save-rename-input", "Тестовая ячейка")

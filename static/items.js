@@ -114,6 +114,26 @@ const ITEM_SETS = {
     three: { atk: 6, crit: 0.1 },
     twoText: "+3 к урону",
     threeText: "+6 к урону и +10% к криту"
+  },
+  frost: {
+    key: "frost",
+    name: "Обет зимы",
+    icon: "❄",
+    color: "#7dd3fc",
+    two: { def: 3 },
+    three: { def: 6, hp: 25 },
+    twoText: "+3 к защите",
+    threeText: "+6 к защите и +25 к здоровью"
+  },
+  dawn: {
+    key: "dawn",
+    name: "Рассвет",
+    icon: "☀",
+    color: "#fbbf24",
+    two: { atk: 4 },
+    three: { atk: 8, crit: 0.1 },
+    twoText: "+4 к урону",
+    threeText: "+8 к урону и +10% к криту"
   }
 };
 
@@ -151,7 +171,7 @@ const ITEM_POOL = [
   { id: "frost_blade", name: "Клинок вечной зимы", slot: "weapon", atk: 20, rarity: "epic", tier: 4,
     effect: { kind: "execute", pct: 35 },
     desc: "Ледяной клинок из последнего зала. Убивает с одного удара раненых." },
-  { id: "dawn_blade", name: "Клинок рассвета", slot: "weapon", atk: 18, rarity: "epic", tier: 4,
+  { id: "dawn_blade", name: "Клинок рассвета", slot: "weapon", atk: 18, rarity: "epic", tier: 4, set: "dawn",
     effect: { kind: "crit", chance: 0.2, mul: 2 },
     desc: "Светлый клинок, в котором утренний свет не гаснет даже под землёй." },
   { id: "ember_blade", name: "Клинок углей", slot: "weapon", atk: 15, rarity: "epic", tier: 3, set: "inferno",
@@ -160,6 +180,9 @@ const ITEM_POOL = [
   { id: "dawn_spear", name: "Копьё рассвета", slot: "weapon", atk: 17, rarity: "epic", tier: 4,
     effect: { kind: "crit", chance: 0.25, mul: 2 },
     desc: "Длинное копьё с наконечником цвета утреннего неба. Бьёт точно." },
+  { id: "frost_axe", name: "Морозный топор", slot: "weapon", atk: 14, rarity: "epic", tier: 3, set: "frost",
+    effect: { kind: "crit", chance: 0.15, mul: 2 },
+    desc: "Топор, выкованный в леднике. Ледяная кромка иногда бьёт вдвое сильнее." },
 
   // ---------- Щиты ----------
   { id: "wooden_shield", name: "Деревянный щит", slot: "shield", hp: 8, def: 0, brace: 0.1, rarity: "common", tier: 0,
@@ -185,6 +208,12 @@ const ITEM_POOL = [
   { id: "abyss_shield", name: "Щит бездны", slot: "shield", hp: 42, def: 3, brace: 0.24, rarity: "epic", tier: 4, set: "abyss",
     effect: { kind: "block", charges: 1 },
     desc: "Тёмный щит со дна. Первый удар в бою гасит полностью." },
+  { id: "frost_bulwark", name: "Морозный бастион", slot: "shield", hp: 28, def: 2, brace: 0.2, rarity: "epic", tier: 3, set: "frost",
+    effect: { kind: "block", charges: 1 },
+    desc: "Ледяная пластина держит первый удар в бою и не трескается от мороза." },
+  { id: "dawn_buckler", name: "Щит рассвета", slot: "shield", hp: 30, def: 3, brace: 0.22, rarity: "epic", tier: 4, set: "dawn",
+    effect: { kind: "block", charges: 1 },
+    desc: "Золотой щит с солнечным умбоном. Первый удар разбивается о зарю." },
 
   // ---------- Броня ----------
   { id: "cloth_robe", name: "Роба послушника", slot: "armor", hp: 10, def: 0, rarity: "common", tier: 0, set: "luck",
@@ -246,6 +275,12 @@ const ITEM_POOL = [
   { id: "abyss_eye", name: "Око глубины", slot: "accessory", hp: 30, def: 2, rarity: "epic", tier: 4, set: "abyss",
     effect: { kind: "reveal" },
     desc: "Видит всех монстров этажа сразу — и на карте, и в тумане." },
+  { id: "frost_heart", name: "Сердце зимы", slot: "accessory", hp: 25, def: 2, rarity: "epic", tier: 3, set: "frost",
+    effect: { kind: "lifesteal", pct: 10 },
+    desc: "Ледяное сердце возвращает часть нанесённого урона здоровьем." },
+  { id: "dawn_crown", name: "Венец рассвета", slot: "accessory", atk: 4, hp: 30, rarity: "epic", tier: 4, set: "dawn",
+    effect: { kind: "goldBonus", pct: 25 },
+    desc: "Солнечный венец: сила и четверть золота сверху за верные ответы." },
   { id: "master_seal", name: "Печать мастера", slot: "accessory", atk: 3, def: 3, hp: 15, rarity: "epic", tier: 3,
     effect: { kind: "hintFree", charges: 1 },
     desc: "Печать старого мастера: одна подсказка в бою не стоит здоровья." },
@@ -305,11 +340,17 @@ const EFFECT_NAMES = {
 function effectText(item) {
   const e = item && item.effect;
   if (!e) return "";
-  const name = EFFECT_NAMES[e.kind];
-  if (!name) return "";
+  const raw = EFFECT_NAMES[e.kind];
+  if (!raw) return "";
+  const name = typeof window !== "undefined" && typeof window.tr === "function"
+    ? window.tr(raw) : raw;
   const parts = [name];
   if (e.pct) parts.push("(" + e.pct + "%)");
   if (e.charges) parts.push("×" + e.charges);
-  if (e.chance) parts.push("шанс " + Math.round(e.chance * 100) + "%");
+  if (e.chance) {
+    const chance = typeof window !== "undefined" && typeof window.tr === "function"
+      ? window.tr("шанс") : "шанс";
+    parts.push(chance + " " + Math.round(e.chance * 100) + "%");
+  }
   return parts.join(" ");
 }

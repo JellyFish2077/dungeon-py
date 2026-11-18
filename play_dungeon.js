@@ -508,6 +508,21 @@ function playStep(skill, rng, state) {
     return bought ? "shop-buy" : "shop-close";
   }
 
+  // Окно находки или встречи осталось открытым с прошлого хода. В игре оно
+  // теперь честно блокирует шаг, поэтому бот обязан завершить выбор и
+  // закрыть окно, иначе он «застревает» на первом же сундуке.
+  if (openOverlay("chest-overlay")) {
+    if (API.closeChest() === false && API.chooseChestOption) {
+      API.chooseChestOption(0);
+      API.closeChest();
+    }
+    return "chest-close";
+  }
+  if (openOverlay("event-overlay")) {
+    API.closeEvent();
+    return "event-close";
+  }
+
   // Цепь держит героя на клетке: ни шагнуть, ни уйти по лестнице. До
   // сундука и торговца рядом дотянуться можно — этим и пользуемся, а
   // остальное время пережидаем: цепь рвётся сама за несколько ожиданий.
@@ -922,6 +937,7 @@ function startGame(opts, rng) {
   // и непроявленное окно выглядит открытым — тогда walkTo и doInteract
   // решают, что поверх карты окно, и деревня проходится вхолостую.
   for (const id of ["end-overlay", "shop-overlay", "battle-overlay", "blessing-overlay", "forge-overlay",
+    "chest-overlay", "event-overlay",
     "level-loading", "entrance-overlay", "calibration-overlay", "dialog-overlay"]) {
     H.el(id).classList.add("hidden");
   }

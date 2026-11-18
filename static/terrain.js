@@ -527,12 +527,12 @@ const TERRAIN_ICONS = {
   workbench: TERRAIN_OBJECTS.workbench,
   cauldron: TERRAIN_OBJECTS.cauldron,
   counter: TERRAIN_OBJECTS.counter,
-  // Тайлы деревни из того, что уже было в наборе, но лежало без дела: двери
-  // (TERRAIN_DOORS не использовался нигде) и «фонтан» из декора — в деревне
-  // он читается как колодец.
+  // Тайлы деревни из того, что уже было в наборе, но лежало без дела:
+  // двери (TERRAIN_DOORS не использовался нигде) и фонтан из декора.
   door: TERRAIN_DOORS[0],
   doorLocked: TERRAIN_DOORS[1] || TERRAIN_DOORS[0],
-  well: TERRAIN_DECOR.lamp[0],
+  // Старый ключ well оставлен совместимости ради: теперь это верстак.
+  well: TERRAIN_OBJECTS.workbench,
   tree: TERRAIN_OBJECTS.tree,
   portal: TERRAIN_OBJECTS.portal,
   // Двор деревни: забор, бочка, поленница и труба нарисованы сборкой — в

@@ -1754,3 +1754,201 @@ body.reduce-motion *::after {
     padding: 4px 0;
   }
 }
+
+/* ---------- пиксельный гримуар: настройки и подразделы меню ---------- */
+.menu-view-sub .menu-panel {
+  padding: 10px;
+  border: 2px solid rgba(214, 168, 75, 0.2);
+  background: #0a1018;
+}
+.menu-view-sub h2 {
+  color: #eee4cf;
+  font-family: var(--font-display);
+  text-shadow: 2px 2px 0 #000;
+}
+.menu-back {
+  color: #d6a84b;
+  font-family: var(--font-data);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.menu-btn,
+.menu-lang-btn {
+  border: 2px solid rgba(214, 168, 75, 0.38);
+  border-radius: 0;
+  background: #141e2b;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
+  color: #eee4cf;
+  font: 700 10px/1.15 var(--font-data);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.menu-btn:hover,
+.menu-lang-btn:hover,
+.menu-btn:focus-visible,
+.menu-lang-btn:focus-visible {
+  border-color: #f0c66a;
+  background: #1b2839;
+}
+.menu-lang-btn.is-active {
+  border-color: #f0c66a;
+  background: #d6a84b;
+  color: #1a1205;
+}
+.menu-toggle-box {
+  border: 2px solid rgba(214, 168, 75, 0.38);
+  border-radius: 0;
+  background: #05070d;
+}
+.menu-toggle input:checked + .menu-toggle-box {
+  border-color: #f0c66a;
+  background: #d6a84b;
+}
+.menu-range input[type="range"] {
+  height: 10px;
+  border: 2px solid rgba(214, 168, 75, 0.2);
+  border-radius: 0;
+  background: #05070d;
+  accent-color: #d6a84b;
+}
+.menu-range input[type="range"]::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f0c66a;
+  border-radius: 0;
+  background: #1a160d;
+}
+.menu-note { color: #8f9bab; }
+
+/* Кнопки и ползунки настроек перекрывались старыми правилами меню. */
+#menu-overlay .menu-view-sub .menu-btn {
+  border: 2px solid rgba(214, 168, 75, 0.38) !important;
+  border-radius: 0 !important;
+  background: #141e2b !important;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6) !important;
+  color: #eee4cf !important;
+  font: 700 10px/1.15 var(--font-data) !important;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+#menu-overlay .menu-view-sub .menu-btn:hover,
+#menu-overlay .menu-view-sub .menu-btn:focus-visible {
+  border-color: #f0c66a !important;
+  background: #1b2839 !important;
+}
+#menu-overlay .menu-panel input[type="range"] {
+  accent-color: #d6a84b;
+}
+
+/* Ползунки настроек: убираем системные круглые бегунки. */
+#menu-overlay .menu-panel input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 14px;
+  background: transparent;
+}
+#menu-overlay .menu-panel input[type="range"]::-webkit-slider-runnable-track {
+  height: 8px;
+  border: 2px solid rgba(214, 168, 75, 0.24);
+  background: #05070d;
+}
+#menu-overlay .menu-panel input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border: 2px solid #f0c66a;
+  border-radius: 0;
+  background: #1a160d;
+}
+#menu-overlay .menu-panel input[type="range"]::-moz-range-track {
+  height: 8px;
+  border: 2px solid rgba(214, 168, 75, 0.24);
+  background: #05070d;
+}
+#menu-overlay .menu-panel input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f0c66a;
+  border-radius: 0;
+  background: #1a160d;
+}
+#menu-overlay .menu-toggle-box { border-radius: 0 !important; }
+#menu-overlay .menu-toggle-box::after {
+  border-radius: 0;
+  background: #8f9bab;
+}
+#menu-overlay .menu-toggle input:checked + .menu-toggle-box::after {
+  background: #1a1205;
+}
+
+/* Профиль и поля ввода в подразделах меню. */
+#menu-overlay .menu-account {
+  border: 2px solid rgba(214, 168, 75, 0.2);
+  border-radius: 0;
+  background: #0a1018;
+}
+#menu-overlay .menu-input {
+  border: 2px solid rgba(214, 168, 75, 0.24);
+  border-radius: 0;
+  background: #05070d;
+  color: #eee4cf;
+  font-family: var(--font-data);
+}
+#menu-overlay .menu-input:focus {
+  border-color: #d6a84b;
+}
+
+/* Карточка локального профиля. */
+#menu-overlay .menu-account {
+  border: 2px solid rgba(214, 168, 75, 0.24) !important;
+  border-radius: 0 !important;
+  background: #0a1018 !important;
+}
+#menu-overlay .menu-account-avatar {
+  border: 2px solid rgba(214, 168, 75, 0.38);
+  border-radius: 0;
+  background: #1a160d;
+  color: #f0c66a;
+}
+
+/* Карточка профиля: правильные классы. */
+#menu-overlay .menu-profile {
+  border: 2px solid rgba(214, 168, 75, 0.24) !important;
+  border-radius: 0 !important;
+  background: #0a1018 !important;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+}
+#menu-overlay .menu-avatar {
+  border: 2px solid rgba(214, 168, 75, 0.38);
+  border-radius: 0;
+  background: #1a160d;
+  color: #f0c66a;
+}
+#menu-overlay .menu-btn {
+  background-image: none !important;
+  background-color: #141e2b !important;
+}
+
+/* Заголовки подразделов меню — как в «Гримуаре». */
+#menu-overlay .menu-view-sub h2 {
+  font-family: "Handjet", "Golos Text", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* Главное меню: каменный список в «Гримуаре». */
+#menu-overlay.menu-main .menu-list {
+  width: min(430px, calc(100vw - 36px));
+  padding: 10px 16px;
+  border: 2px solid #6b5634;
+  border-top: 3px solid #f0c66a;
+  background: rgba(10, 16, 24, 0.92);
+  box-shadow: 6px 6px 0 #000;
+}
+#menu-overlay.menu-main .menu-item {
+  font-family: "Handjet", "Golos Text", sans-serif;
+  letter-spacing: 0.04em;
+}
+#menu-overlay.menu-main .menu-item:hover .menu-item-label,
+#menu-overlay.menu-main .menu-item.is-active .menu-item-label { color: #f0c66a; }
