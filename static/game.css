@@ -12809,7 +12809,9 @@ body.game-page .minimap-dock.off {
     bottom: auto;
     left: calc(8px + var(--safe-left));
     width: auto;
-    max-height: calc(var(--app-vh) * 0.36);
+    /* Пять шагов и подсказка управления должны помещаться целиком:
+       прежние 36% высоты обрезали нижнюю строку на телефоне. */
+    max-height: calc(var(--app-vh) - 190px);
   }
 
   body.game-page:has(.minimap-dock:not(.off)) .tutorial-panel {
