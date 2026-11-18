@@ -185,7 +185,7 @@ const ICONS = {
       <path d="M5.5 12.8h5M6.3 12.8v1.8M8 12.8v1.8M9.7 12.8v1.8" stroke="#0b1120" stroke-width="0.6"/>
       <path d="M4.6 7 5.4 5.6M11.4 7l-.8-1.4" stroke="#7d7466" stroke-width="0.6"/>
     </svg>`,
-  // Двор деревни: дерево, забор, колодец и костёр. Черновые иконки, чтобы
+  // Двор деревни: дерево, забор, верстак и костёр. Черновые иконки, чтобы
   // уровень читался ещё до появления настоящих тайлов (см. фазу графики).
   tree: `
     <svg class="ent-svg" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
@@ -250,6 +250,15 @@ const ICONS = {
       <path d="M5.4 6.2h5.2l.5 2.2H4.9z" fill="#a8733c"/>
       <circle cx="8" cy="10.4" r="1.35" fill="#f2c14e" stroke="${OL}" stroke-width="0.45"/>
       <path d="M7.3 10.4h1.4M8 9.7v1.4" stroke="#7c4a12" stroke-width="0.45" stroke-linecap="round"/>
+    </svg>`,
+  key: `
+    <svg class="ent-svg" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="2.5" width="6" height="6" fill="#f0c66a" stroke="${OL}" stroke-width="0.8"/>
+      <rect x="3.8" y="4.3" width="2.4" height="2.4" fill="${OL}"/>
+      <rect x="7.5" y="4.5" width="6.5" height="2" fill="#f0c66a" stroke="${OL}" stroke-width="0.7"/>
+      <rect x="10.6" y="6.3" width="1.6" height="2.5" fill="#f0c66a" stroke="${OL}" stroke-width="0.6"/>
+      <rect x="8.3" y="6.3" width="1.2" height="1.7" fill="#f0c66a" stroke="${OL}" stroke-width="0.5"/>
+      <path d="M2.8 3.2h1.1" stroke="#fff3c4" stroke-width="0.55" stroke-linecap="round"/>
     </svg>`,
   stairs: `
     <svg class="ent-svg" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">

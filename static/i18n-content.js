@@ -22,6 +22,11 @@
     ash_blade: ["Ash Blade", "Dark steel with smouldering cracks. Finishes those barely standing."],
     frost_blade: ["Blade of Eternal Winter", "An ice blade from the last hall. Kills the wounded in a single strike."],
     dawn_blade: ["Dawn Blade", "A bright blade where morning light never fades, even underground."],
+    frost_axe: ["Frost Axe", "Forged in a glacier. Its icy edge sometimes strikes twice as hard."],
+    frost_bulwark: ["Frost Bulwark", "An ice plate that holds the first blow of a battle and does not crack in the cold."],
+    frost_heart: ["Heart of Winter", "The icy heart returns part of the damage dealt as health."],
+    dawn_buckler: ["Dawn Shield", "A golden shield with a sun boss. The first blow shatters against the dawn."],
+    dawn_crown: ["Crown of Dawn", "A sun crown: strength and a quarter more gold for correct answers."],
     wooden_shield: ["Wooden Shield", "Nailed together from oak planks. Takes a hit, but unreliable against fire."],
     round_shield: ["Round Shield", "A leather-covered disc with an iron boss. Good for catching arrows."],
     steel_shield: ["Steel Shield", "Heavy steel with a gilt rim. Blocks a noticeable share of a blow when defending."],
@@ -73,7 +78,9 @@
     luck: "Lucky Share",
     ash: "Ash",
     inferno: "Inferno's Flame",
-    abyss: "Abyss Ward"
+    abyss: "Abyss Ward",
+    frost: "Winter's Vow",
+    dawn: "Dawn"
   };
 
   if (typeof ITEM_POOL !== "undefined") {

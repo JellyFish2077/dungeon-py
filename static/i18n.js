@@ -280,6 +280,167 @@
     "Бонусы": "Bonuses",
     "Достижения": "Achievements",
     "Оружие": "Weapon",
+    "Щиты": "Shields",
+    "Амулеты": "Amulets",
+    "Расходники": "Supplies",
+    "В банке": "In the bank",
+    "В дороге": "Packed",
+    "Уже в дороге": "Already packed",
+    "нет в дороге": "not packed",
+    "В банке:": "In the bank:",
+    "возрождение на месте": "revives on the spot",
+    "Выбери товар слева.": "Choose an item on the left.",
+    "Сравнение с дорогой": "Compared with your pack",
+    "как эта вещь": "same as this item",
+    "В дороге пока нет вещей этого слота.":
+      "No packed items in this slot yet.",
+    "атака": "attack",
+    "защита": "defence",
+    "оборона": "guard",
+    "Цена": "Price",
+    "Слот": "Slot",
+    "набор:": "set:",
+    "уже в дороге": "already packed",
+    "Максимум": "Maximum",
+    "Зелья:": "Potions:",
+    "Амулеты:": "Amulets:",
+    "В дороге:": "Packed:",
+    "в дороге": "packed",
+    "2 вещи:": "2 items:",
+    "3:": "3:",
+    "надето": "equipped",
+    "набор собран": "set complete",
+    "с набором:": "with the set:",
+    "2 вещи:": "2 items:",
+    "3 вещи:": "3 items:",
+    // Банк-штаб: вкладки, счёт и правила переноса золота.
+    "Счёт": "Account",
+    "Награды": "Awards",
+    "Золото": "Gold",
+    "Материалы": "Materials",
+    "Ключи": "Keys",
+    "Рекорд": "Record",
+    "похода ещё не было": "no expedition yet",
+    "дракон побеждён": "dragon defeated",
+    "золота в банке": "gold in the bank",
+    "зелий в запасе": "potions stored",
+    "амулетов возврата": "return amulets",
+    "материалов на складе": "materials in store",
+    "Амулет срабатывает один раз за поход и возвращает героя на месте. Кузница II поднимает потолок.":
+      "An amulet works once per expedition and revives the hero on the spot. Forge II raises the cap.",
+    "Что доходит до деревни": "What reaches the village",
+    "Разбор ошибок": "Mistake review",
+    "— всё походное золото и награда за дракона.":
+      "— all expedition gold and the dragon reward.",
+    "— 50% походного золота.": "— 50% of expedition gold.",
+    "— 25% золота и три первых боя по слабым темам.":
+      "— 25% of gold and the first three fights on your weak topics.",
+    "— 75% золота; снаряжение и зелья остаются в походе.":
+      "— 75% of gold; gear and potions stay in the expedition.",
+    "Зелья, материалы и ключи попадают в банк сразу, ещё в походе.":
+      "Potions, materials and keys reach the bank immediately, during the expedition.",
+    "открыто": "unlocked",
+    "Верных ответов:": "Correct answers:",
+    "Решено задач:": "Code tasks solved:",
+    "Походов:": "Expeditions:",
+    "Следующий шаг": "Next step",
+    "Амулеты возврата": "Return amulets",
+    "материалы уже собраны": "materials are already gathered",
+    "снаряжение крепче: +10 здоровья в каждом походе":
+      "sturdier gear: +10 health each expedition",
+    "ещё +10 здоровья (всего +20)": "another +10 health (+20 total)",
+    "снаряжение крепче: +10 здоровья в каждом походе · ещё +10 здоровья (всего +20)":
+      "sturdier gear: +10 health each expedition · another +10 health (+20 total)",
+    "+50% находок материалов": "+50% material finds",
+    "+1 привал за поход": "+1 rest per expedition",
+    "+1 амулет возврата сверх потолка": "+1 return amulet above the cap",
+    "потолок улучшений героя — 5": "hero upgrade cap — 5",
+    "+1 заряд умения и −15% к цене улучшений":
+      "+1 skill charge and −15% to upgrade prices",
+    // Староста: летопись кампании и поручения.
+    "Кампания ведёт к дракону. Поручения платят золотом и материалами за каждый поход.":
+      "The campaign leads to the dragon. Assignments pay gold and materials every expedition.",
+    "сейчас": "current",
+    "впереди": "ahead",
+    "глава закрыта": "chapter closed",
+    "глава готова": "chapter ready",
+    "Где": "Where",
+    "Дорога вниз открыта": "The road down is open",
+    "не взято": "none taken",
+    "Можно спуститься и без него.": "You can descend without one.",
+    "готово к сдаче": "ready to turn in",
+    "Прогресс считается за один поход; одно поручение за раз.":
+      "Progress counts within one expedition; one assignment at a time.",
+    "Без задания тоже можно: в подземелье пускают всегда. С заданием деревня платит золотом и материалами.":
+      "You can go without an assignment: the dungeon is always open. With one, the village pays gold and materials.",
+    "Поручения остаются: за них деревня платит золотом и материалами в каждом походе.":
+      "Assignments remain: the village pays gold and materials for them every expedition.",
+    // Кузнец: горн, сводка и карточки улучшений.
+    "Горн и улучшения героя": "Forge and hero upgrades",
+    "Улучшения героя": "Hero upgrades",
+    "куплено уровней": "levels purchased",
+    "Горн ещё не разожжён": "The forge is not lit yet",
+    "Восстанови кузницу — и я примусь за работу. Она открывает первые три уровня улучшений; дом мастера поднимет потолок до пятого и удешевит работу.":
+      "Restore the forge and I will get to work. It opens the first three upgrade levels; the master's house raises the cap to five and lowers prices.",
+    "Улучшения остаются навсегда и действуют в каждом походе. Кузница открывает":
+      "Upgrades are permanent and work in every expedition. The forge opens",
+    ", дом мастера поднимет потолок до пятого и удешевит работу.":
+      ", the master's house raises the cap to five and lowers prices.",
+    "уровня, дом мастера поднимет потолок до пятого и удешевит работу.":
+      "levels, the master's house raises the cap to five and lowers prices.",
+    "уровня.": "levels.",
+    // Мастер: потолок улучшений, умения и печать.
+    "Мастерская: потолок, умения и печать": "Workshop: cap, abilities and seal",
+    "Потолок улучшений": "Upgrade cap",
+    "уровней": "levels",
+    "закрыт": "locked",
+    "Кузница · 3": "Forge · 3",
+    "Дом мастера · 5": "Master's house · 5",
+    "Кузница ещё не разожжена: улучшать пока нечего.":
+      "The forge is not lit yet: there is nothing to upgrade.",
+    "Умения похода": "Expedition abilities",
+    "Выбор умения — в «Свитке похода» у стража. Зарядов на поход:":
+      "Choose an ability in the expedition scroll at the guard. Charges per expedition:",
+    "Умения откроются, когда дом мастера будет восстановлен.":
+      "Abilities unlock when the master's house is restored.",
+    "выбрано": "selected",
+    "доступно": "available",
+    "закрыто": "locked",
+    "глава в работе": "chapter in progress",
+    "печать у тебя": "seal in hand",
+    "печать получена": "seal obtained",
+    "Спуск на десятый этаж и ниже открыт.":
+      "The descent to the tenth floor and below is open.",
+    "Спуск на десятый этаж открыт.": "The descent to the tenth floor is open.",
+    "Вторая печать ждёт в главе «Дверь мастера».":
+      "The second seal awaits in the “Master's Door” chapter.",
+    "Сначала восстанови дом мастера и вернись к старосте.":
+      "First restore the master's house and return to the elder.",
+    "Забери награду у старосты — печать мастера.":
+      "Collect the reward from the elder — the master's seal.",
+    "Убирает два неверных варианта — а в задании с кодом показывает первую проверку.":
+      "Removes two wrong options — and in a code task shows the first check.",
+    "умения похода и потолок улучшений — 5":
+      "expedition abilities and upgrade cap — 5",
+    "откроется в доме мастера": "unlocks at the master's house",
+    // Школа: кабинет учителя.
+    "Курс": "Course",
+    "Бонус к походу": "Expedition bonus",
+    "Продолжить обучение": "Continue learning",
+    "Весь курс": "Whole course",
+    "Награда за модуль:": "Module reward:",
+    "большое зелье": "a large potion",
+    "Все девять модулей закрыты": "All nine modules are complete",
+    "Бонус к походу уже в силе. Можно вернуться к практике или повторить любой модуль.":
+      "The expedition bonus is already active. You can return to practice or replay any module.",
+    "Первый урок — теория, второй — практика, третий — экзамен. После экзамена учитель даёт домашнее задание.":
+      "The first lesson is theory, the second is practice, the third is the exam. After the exam the teacher gives homework.",
+    "все модули пройдены": "all modules complete",
+    "Модуль пройден": "Module complete",
+    "склад закрыт": "storage closed",
+    "Задание выполнено — забери награду.": "The assignment is complete — collect the reward.",
+    "Уроки модуля пройдены. Осталось домашнее задание.":
+      "The module lessons are complete. Homework remains.",
     "Броня": "Armor",
     "Щит": "Shield",
     "Урон": "Damage",
@@ -383,6 +544,78 @@
       "Also “find the bug” and occasional function writing (def)",
     "Много заданий на код и функций, сильные монстры":
       "Many code tasks and functions, stronger monsters",
+
+    /* --- окно стража: свиток похода --- */
+    "Сложность": "Difficulty",
+    "Банк": "Bank",
+    "Режим": "Mode",
+    "Знамение": "Omen",
+    "Умение": "Skill",
+    "Привалы": "Camps",
+    "Сводка похода": "Expedition summary",
+    "Поход на паузе": "Expedition paused",
+    "Поход окончен": "Expedition over",
+    "или новый поход": "or a new expedition",
+    "Выбери, как пройдёт этот спуск. Настройки можно менять у стража до первого шага.":
+      "Choose how this descent will go. You can change the settings at the guard before the first step.",
+    "Насколько сильные враги и вопросы":
+      "How strong the enemies and questions are",
+    "Где заканчивается этот спуск": "Where this descent ends",
+    "Характер похода: награда против риска":
+      "The character of the run: reward versus risk",
+    "Одно на поход, заряды пополняются у костра":
+      "One per expedition; charges refill at campfires",
+    "Вопросы на ступень ниже, враги слабее, без def и поиска ошибок":
+      "Questions one step lower, weaker enemies, no def and no bug hunting",
+    "Вопросы и задачи по Python, обычные враги, «найди ошибку» и иногда def":
+      "Python questions and tasks, ordinary enemies, “find the bug” and occasional def",
+    "Больше кода и функций, враги в 1,5 раза сильнее, вопросы на ступень выше":
+      "More code and functions, enemies 1.5× stronger, questions one step higher",
+    "Вопросы на ступень ниже, враги слабее. Без def и поиска ошибок.":
+      "Questions one step lower, weaker enemies. No def and no bug hunting.",
+    "Вопросы и задачи по Python, обычные враги. «Найди ошибку» и иногда def.":
+      "Python questions and tasks, ordinary enemies. “Find the bug” and occasional def.",
+    "Больше кода и функций, враги в 1,5 раза сильнее, вопросы на ступень выше.":
+      "More code and functions, enemies 1.5× stronger, questions one step higher.",
+    "Поход сохранится у стража, если подняться на поверхность.":
+      "The expedition is saved at the guard if you return to the surface.",
+    "откроется в кузнице": "unlocks at the smith",
+    "не выбрано": "not chosen",
+    "нет аккаунта": "no account",
+    "остаётся в деревне": "stays in the village",
+    "сложные вопросы": "harder questions",
+    "без финала": "no finale",
+    "монстры бьют сильнее": "monsters hit harder",
+    "нужен амулет": "amulet needed",
+    "Прозрение": "Insight",
+    "Точный удар": "Precise strike",
+    "Второе дыхание": "Second wind",
+    "Убирает два неверных варианта, а в задаче на код показывает первую проверку.":
+      "Removes two wrong options, and on a code task shows the first check.",
+    "Следующий верный ответ бьёт вдвое сильнее.":
+      "The next correct answer strikes twice as hard.",
+    "Возвращает здоровье и снимает яд.": "Restores health and removes poison.",
+
+    /* --- Наставник: запись действий --- */
+    "Запись действий": "Action replay",
+    "Смотреть": "Watch",
+    "Клик": "Click",
+    "Ответ": "Answer",
+    "Опыт": "XP",
+    "Герой у входа. Иди стрелками или WASD — каждый шаг двигает героя.":
+      "The hero is at the entrance. Move with the arrow keys or WASD — each step moves the hero.",
+    "Можно кликнуть по клетке: герой сам построит маршрут, если путь свободен.":
+      "You can click a tile: the hero will plot a route if the path is clear.",
+    "E — действие. Сундук рядом открывается: внутри золото и снаряжение.":
+      "E — interact. The chest next to you opens: gold and gear inside.",
+    "Монстр на пути. Шагни в него — начнётся бой на вопросах.":
+      "A monster blocks the way. Step into it to start a question battle.",
+    "Верный ответ — твой удар. Ошибка передаёт ход врагу.":
+      "A correct answer is your strike. A mistake gives the enemy a turn.",
+    "Победа: опыт и золото. Иногда с врага падает вещь.":
+      "Victory: XP and gold. Sometimes an item drops.",
+    "M — карта. Лестница вниз ведёт на следующий этаж.":
+      "M — map. The stairs lead to the next floor.",
     "15 этажей до дракона. Победа закрывает поход":
       "15 floors to the dragon. Victory ends the expedition",
     "После дракона этажи не кончаются — спуск идёт, пока герой жив":
@@ -582,20 +815,20 @@
     "Повторение кода": "Code retyping",
     "Дань дракону": "Dragon tribute",
     "Использовать амулет": "Use the amulet",
-    "Материалы и ключи остаются в деревне: следующий поход начнётся с ними.":
-      "Materials and keys stay in the village: the next expedition starts with them.",
-    "Снаряжение, зелья, уровни и кузница этого похода потеряны. Материалы и ключи остались в деревне.":
-      "The gear, potions, levels and forge of this run are lost. The materials and keys remain in the village.",
+    "Материалы и ключи от построек остаются в деревне: следующий поход начнётся с ними.":
+      "Materials and building keys stay in the village: the next expedition starts with them.",
+    "Снаряжение, зелья, уровни и кузница этого похода потеряны. Материалы и ключи от построек остались в деревне.":
+      "The gear, potions, levels and forge of this run are lost. The materials and building keys remain in the village.",
     "Что забрать с собой?": "What will you take with you?",
     "Темы ещё не проверены — сыграй ещё.": "No topics tested yet — play another run.",
     "Разбор по темам": "Topic breakdown",
     "Дракон повержен!": "The dragon is defeated!",
     "Дракон повержен. Можно спуститься в бездну или вернуться в деревню.":
       "The dragon is defeated. You can descend into the abyss or return to the village.",
-    "Амулет вернёт героя на этот этаж. Материалы и ключи уже в деревне.":
-      "The amulet will bring the hero back to this floor. Materials and keys are already in the village.",
-    "Вернись в деревню: золото в банке, материалы и ключи сохранены. Купи улучшение или повтори слабую тему.":
-      "Return to the village: your gold is in the bank, materials and keys are safe. Buy an upgrade or review a weak topic.",
+    "Амулет вернёт героя на этот этаж. Материалы и ключи от построек уже в деревне.":
+      "The amulet will bring the hero back to this floor. Materials and building keys are already in the village.",
+    "Вернись в деревню: золото в банке, материалы и ключи от построек сохранены. Купи улучшение или повтори слабую тему.":
+      "Return to the village: your gold is in the bank, materials and building keys are safe. Buy an upgrade or review a weak topic.",
     "В деревню": "To the village",
     "Спуститься глубже": "Descend deeper",
     "Печати глубины": "Seals of the Depths",
@@ -701,11 +934,11 @@
       "Tap a tile — move · drag the map — camera · buttons below — act and skip a turn.",
     "Пропустить": "Skip",
     "Шаг по карте": "A step on the map",
-    "Иди стрелками, WASD или кликом по клетке.":
-      "Move with arrows, WASD or by clicking a tile.",
+    "Иди стрелками, WASD или коснись клетки.":
+      "Move with arrows, WASD or by tapping a tile.",
     "Сундук": "Chest",
-    "Подойди к сундуку и нажми E: внутри предмет или материал.":
-      "Walk up to the chest and press E: it holds an item or a material.",
+    "Подойди к сундуку и нажми кнопку действия: внутри добыча.":
+      "Walk up to the chest and press the action button: it holds loot.",
     "Столкнись с монстром и ответь на вопрос: верный ответ — твой удар.":
       "Run into a monster and answer the question: a correct answer is your strike.",
     "Костёр возвращает здоровье. Привалов на этаже немного.":
@@ -861,16 +1094,21 @@
     "Знакомство": "Introduction",
     "Крыша для амбара": "A Roof for the Barn",
     "Вода для деревни": "Water for the Village",
+    "Верстак для деревни": "A Workbench for the Village",
+    "Верстак": "Workbench",
     "Разжечь горн": "Light the Forge",
     "Дверь мастера": "The Master's Door",
     "Деревня · дома и площадь": "Village · houses and square",
     "Деревня · амбар": "Village · barn",
     "Деревня · колодец": "Village · well",
+    "Деревня · верстак": "Village · workbench",
     "Деревня · кузница": "Village · forge",
     "Деревня · дом мастера": "Village · master's house",
     "Подземелье · последний спуск": "Dungeon · the last descent",
     "Деревня стоит на четырёх опорах: амбар, колодец, кузня и дом мастера. Под ними — старый спуск, где когда-то учили первых писцов. Теперь там стражи, а за ними — дракон, последний хранитель двери.":
       "The village stands on four pillars: the barn, the well, the forge and the master's house. Beneath them lies the old descent. Now guardians hold it, and beyond them waits the dragon, the last keeper of the door.",
+    "Деревня стоит на четырёх опорах: амбар, верстак, кузня и дом мастера. Под ними — старый спуск, где когда-то учили первых писцов. Теперь там стражи, а за ними — дракон, последний хранитель двери.":
+      "The village stands on four pillars: the barn, the workbench, the forge and the master's house. Beneath them lies the old descent. Now guardians hold it, and beyond them waits the dragon, the last keeper of the door.",
     "Печати на месте. Деревня переживёт зиму. За последней дверью тишина — и только тебе решать, открывать ли её.":
       "The seals are in place. The village will survive the winter. Behind the last door there is silence — and only you can decide whether to open it.",
     "Обойти деревню и поговорить с жителями.":
@@ -891,12 +1129,20 @@
       "The barn stands again. Beneath the old floor a seal was found — warm, as if just held. “One more pillar,” the elder says.",
     "Расчистить колодец и услышать, что говорит глубина.":
       "Clear the well and hear what the deep says.",
+    "Починить верстак и подогнать снаряжение.":
+      "Repair the workbench and fit the gear.",
     "Колодец засыпан камнем. Через него деревня слушает глубину и узнаёт, когда просыпаются старые замки. На расчистку нужна руда.":
       "The well is filled with stone. Through it the village listens to the deep and learns when old locks wake. Clearing it takes ore.",
+    "Верстак завален хламом. На нём подгоняют доспех и чинят ремни: крепкое снаряжение держит удар. На починку нужна руда.":
+      "The workbench is buried under junk. Here armour is fitted and straps are mended: sturdy gear takes a hit. Repairs take ore.",
     "Восстановить колодец и вернуться к старосте.":
       "Restore the well and return to the elder.",
+    "Восстановить верстак и вернуться к старосте.":
+      "Restore the workbench and return to the elder.",
     "Вода пошла. В её шуме слышен чужой голос: «Не спускайся дальше». Староста делает вид, что не слышит.":
       "Water flows again. In its murmur a strange voice is heard: “Do not go deeper.” The elder pretends not to hear.",
+    "Верстак снова в деле. Ремни подтянуты, пластины сидят ровно — герой выдержит лишний удар. «Одной опорой больше», — говорит староста.":
+      "The workbench is back in business. Straps are tightened, plates sit straight — the hero can take another hit. “One more pillar,” the elder says.",
     "Восстановить кузницу и получить оберег глубины.":
       "Restore the forge and receive the depth ward.",
     "Кузница холодна. Без горна не укрепить снаряжение, а спуск после шестого этажа закрыт без оберега глубины. Нужны руда и древесина.":
@@ -928,6 +1174,90 @@
     "Выбери один правильный вариант.": "Choose one correct option.",
     "Выпить": "Drink",
     "Убрать": "Remove",
+    "Надеть": "Equip",
+    "Надеть сразу": "Equip now",
+    "Находка": "Find",
+    "Сундук открыт": "Chest opened",
+    "Выбор": "Choice",
+    "Сундук с выбором": "Choose a reward",
+    "3 награды": "3 rewards",
+    "Выбрать": "Choose",
+    "Выбери одну вещь": "Choose one item",
+    "Остальные исчезнут": "The rest will vanish",
+    "Ловушка в замке": "Lock trap",
+    "Шип сработал до того, как крышка поднялась. Снаряжение от него не спасает.":
+      "A spike fired before the lid opened. Armour does not protect from it.",
+    "Сначала выбери одну награду": "Choose one reward first",
+    "В сундуке три вещи. Возьми одну — остальные исчезнут.":
+      "The chest holds three items. Take one — the rest will vanish.",
+    "Ключи сундуков": "Chest keys",
+    "Ключ от сундука": "Chest key",
+    "Ключ от сундука: +1": "Chest key: +1",
+    "Запертый сундук": "Locked chest",
+    "Открыть запертый сундук": "Open locked chest",
+    "Заперт: нужен ключ": "Locked: a key is needed",
+    "Сундук заперт. Найди ключ на этаже.":
+      "The chest is locked. Find a key on this floor.",
+    "Замок открыт ключом": "Lock opened with a key",
+    "Встреча на этаже": "Floor encounter",
+    "Esc — уйти": "Esc — leave",
+    "Странник": "Wanderer",
+    "Древний жребий": "Ancient dice",
+    "Уйти": "Leave",
+    "Поговорить со странником": "Talk to the wanderer",
+    "Бросить древний жребий": "Cast the ancient dice",
+    "Он греется у входа и готов поделиться тем, что нашёл.":
+      "He warms himself at the entrance and is willing to share what he found.",
+    "На камне лежат две кости. Одна сторона — находка, другая — боль.":
+      "Two dice lie on the stone. One side is a find, the other is pain.",
+    "Перевязать раны": "Bandage wounds",
+    "Купить находку": "Buy the find",
+    "Бросить кости": "Cast the dice",
+    "Здоровье уже полное": "Health is already full",
+    "Жребий брошен": "Dice cast",
+    "Недостаточно здоровья для жребия": "Not enough health for the dice",
+    "Не хватает золота": "Not enough gold",
+    "25 золота · случайная вещь этого этажа":
+      "25 gold · a random item from this floor",
+    "20 HP · шанс на вещь или золото":
+      "20 HP · a chance at an item or gold",
+    "Нужно больше 20 HP": "Requires more than 20 HP",
+    "Кости пусты. Древний жребий забрал своё.":
+      "The dice are empty. The ancient gamble took its due.",
+    "Странник кивает: «У меня есть иголка, нитки и одна занятная вещь. Выбирай».":
+      "The wanderer nods: “I have a needle, thread and one curious thing. Choose.”",
+    "Забрать": "Take",
+    "Жребий просит 20 HP. Взамен — находка, золото или пустота.":
+      "The dice ask for 20 HP. In return — a find, gold or nothing.",
+    "Всё уже в сумке": "Already in the bag",
+    "Редкая находка": "Rare find",
+    "Амулет ушёл в деревню. Он сработает один раз и вернёт героя на месте гибели.":
+      "The amulet has gone to the village. It triggers once and returns the hero where they fell.",
+    "старый сундук": "old chest",
+    "крепкий сундук": "sturdy chest",
+    "богатый сундук": "rich chest",
+    "сундук бездны": "abyss chest",
+    "Снаряжение": "Equipment",
+    "В кошельке": "In the purse",
+    "Итого": "Total",
+    "Комплекты": "Sets",
+    "Бонус набора активен": "Set bonus active",
+    "Бонус набора не активен": "Set bonus inactive",
+    "Выбери предмет в сумке — здесь появятся его характеристики, эффект и сравнение с надетым.":
+      "Pick an item in the bag — its stats, effect and comparison with worn gear appear here.",
+    "Свиток используется кнопкой «Подсказка» в бою.":
+      "The scroll is used with the Hint button in battle.",
+    "Здоровье полное — зелье подождёт.": "Health is full — the potion can wait.",
+    "Сейчас зелье бесполезно.": "The potion is useless right now.",
+    "ничего не надето": "nothing equipped",
+    "Пока ничего не даёт. Надень вторую вещь семьи.":
+      "No bonus yet. Wear a second item from the set.",
+    "Полный набор": "Full set",
+    "Работает": "Active",
+    "До полного набора ещё одна вещь.": "One more item for the full set.",
+    "лечение": "healing",
+    "всё": "all",
+    "шанс": "chance",
     "Первый спуск": "First descent",
     "Кошелёк: пусто. Подземелье ещё не пройдено.":
       "Purse: empty. The dungeon has not been cleared yet.",
@@ -1057,12 +1387,54 @@
       "— the expedition ends, but materials and keys reach the village intact. Gold — at 50%, and if you take a mistake review instead — at 25% and three first battles on weak topics.",
     "— колодец, амбар, кузницу и дом мастера восстанавливают за материалы из подземелья. Кузница даёт улучшения героя, и без неё глубоко не спуститься.":
       "— the well, barn, forge and master's house are restored with materials from the dungeon. The forge gives hero upgrades, and without it you won't get deep.",
+    "— верстак, амбар, кузницу и дом мастера восстанавливают за материалы из подземелья. Кузница даёт улучшения героя, и без неё глубоко не спуститься.":
+      "— the workbench, barn, forge and master's house are restored with materials from the dungeon. The forge gives hero upgrades, and without it you won't get deep.",
     "— второй шанс: поднимет на месте и сохранит поход. Унести можно не больше 3.":
       "— a second chance: revives you on the spot and keeps the expedition. You can carry no more than 3.",
     "— клавиша M, зум — колесо мыши.":
       "— the M key, zoom — the mouse wheel.",
 
     /* --- торговец и склад --- */
+    "Снаряжение кузнеца": "Smith's Kit",
+    "+4 к защите": "+4 defence",
+    "+9 к защите и +30 к здоровью": "+9 defence and +30 health",
+    "Убор тени": "Shadow Garb",
+    "+8% к шансу крита": "+8% critical chance",
+    "+18% к шансу крита и +10% вампиризма": "+18% critical chance and +10% lifesteal",
+    "Наследие дракона": "Dragon Legacy",
+    "+5 к урону": "+5 damage",
+    "+12 к урону и +60 к здоровью": "+12 damage and +60 health",
+    "Живая кровь": "Living Blood",
+    "+8% вампиризма": "+8% lifesteal",
+    "+20% вампиризма и +25 к здоровью": "+20% lifesteal and +25 health",
+    "Фартовая доля": "Lucky Share",
+    "+15% золота": "+15% gold",
+    "+40% золота и +3 к урону": "+40% gold and +3 damage",
+    "Пламя бездны": "Abyss Flame",
+    "+8 к урону и +12% к шансу крита": "+8 damage and +12% critical chance",
+    "Стража глубин": "Deep Guard",
+    "+10 к защите и +40 к здоровью": "+10 defence and +40 health",
+    "Пепел": "Ash",
+    "+3 к урону": "+3 damage",
+    "+6 к урону и +10% к криту": "+6 damage and +10% critical chance",
+    "Обет зимы": "Winter's Vow",
+    "+3 к защите": "+3 defence",
+    "+6 к защите и +25 к здоровью": "+6 defence and +25 health",
+    "Рассвет": "Dawn",
+    "+4 к урону": "+4 damage",
+    "+8 к урону и +10% к криту": "+8 damage and +10% critical chance",
+    "Лечит частью нанесённого урона": "Heals from part of the damage dealt",
+    "Иногда наносит двойной урон": "Sometimes deals double damage",
+    "Гасит первые атаки врага": "Blocks the enemy's first attacks",
+    "Шипы бьют сильнее при верном ответе": "Thorns hit harder on a correct answer",
+    "Бесплатные подсказки без −10 HP": "Free hints without −10 HP",
+    "Одна подсказка в бою без потери здоровья": "One hint in battle without losing health",
+    "Больше золота за верные ответы": "More gold for correct answers",
+    "Не действует яд": "Poison has no effect",
+    "Все враги видны на этаже": "All enemies on the floor are visible",
+    "Сильнее добивает раненых": "Finishes wounded enemies more strongly",
+    "Снимает яд": "Removes poison",
+    "Восстанавливает всё здоровье": "Restores all health",
     "Амулет возврата": "Return amulet",
     "максимум": "maximum",
     "Купить": "Buy",
@@ -1351,7 +1723,30 @@
     [/^(.*?)\s+шанс\s+(\d+)%$/, function (m, text, pct) {
       return translateString(text) + " · chance " + pct + "%";
     }],
+    [/^снаряжение крепче: \+(\d+) здоровья в каждом походе$/, function (m, n) {
+      return "gear is sturdier: +" + n + " health each expedition";
+    }],
+    [/^ещё \+(\d+) здоровья \(всего \+(\d+)\)$/, function (m, n, total) {
+      return "another +" + n + " health (+" + total + " total)";
+    }],
     [/^Этаж\s+(\d+)$/, function (m, n) { return "Floor " + n; }],
+    [/^Этаж\s+(\d+)\s+·\s+(\d+)\s+золота$/, function (m, n, gold) {
+      return "Floor " + n + " · " + gold + " gold";
+    }],
+    [/^Продолжить:\s*этаж\s+(\d+)$/, function (m, n) { return "Continue: floor " + n; }],
+    [/^Возродиться за амулет:\s*этаж\s+(\d+)$/, function (m, n) {
+      return "Revive with an amulet: floor " + n;
+    }],
+    [/^Поход окончен — в деревню$/, function () { return "Expedition over — to the village"; }],
+    [/^Свернуть поход \(\+(\d+) зол\.\)$/, function (m, gold) {
+      return "Fold expedition (+" + gold + " gold)";
+    }],
+    [/^(.+) · (.+) · нужен амулет$/, function (m, diff, omen) {
+      return translateString(diff) + " · " + translateString(omen) + " · amulet needed";
+    }],
+    [/^Зарядов на поход:\s*(\d+)\s+— пополняются у костров в подземелье\.$/, function (m, n) {
+      return "Charges per expedition: " + n + " — refilled at campfires in the dungeon.";
+    }],
     [/^Ур\.\s*(\d+)$/, function (m, n) { return "Lv. " + n; }],
     [/^Уровень\s+(\d+)$/, function (m, n) { return "Level " + n; }],
     [/^Глава\s+(\d+)$/, function (m, n) { return "Chapter " + n; }],
@@ -1573,6 +1968,9 @@
     [/^(\d+) золота$/, function (m, gold) {
       return gold + " gold";
     }],
+    [/^Этаж\s+(\d+)\s*·\s*«(.+)»$/, function (m, n, tier) {
+      return "Floor " + n + " · “" + translateString(tier) + "”";
+    }],
     [/^Этаж (\d+) · (.+)$/, function (m, n, name) {
       return "Floor " + n + " · " + translateString(name);
     }],
@@ -1620,14 +2018,35 @@
     [/^Всё\s+(\d+)$/, function (m, n) { return "All " + n; }],
     [/^Снаряжение\s+(\d+)$/, function (m, n) { return "Equipment " + n; }],
     [/^Зелья\s+(\d+)$/, function (m, n) { return "Potions " + n; }],
-    [/^(\d+)\s*зол\.$/, function (m, n) { return n + " gold"; }],
+    [/^(\d+)\s+предмет(а|ов)?$/, function (m, n) {
+      return n + (Number(n) === 1 ? " item" : " items");
+    }],
+    [/^(.+)\s*·\s*набор$/, function (m, slot) {
+      return translateString(slot) + " · set";
+    }],
+    [/^Сейчас:\s*\+(\d+)\s+HP(,\s*снимает яд)?$/, function (m, n, cleanse) {
+      return "Now: +" + n + " HP" + (cleanse ? ", cures poison" : "");
+    }],
+    [/^Из сундука выбран предмет: (.+)\.$/, function (m, name) {
+      return "Chosen from the chest: " + translateString(name) + ".";
+    }],
+    [/^осталось (\d+)$/, function (m, n) { return "left " + n; }],
+    [/^Бесплатно · \+(\d+) HP$/, function (m, n) {
+      return "Free · +" + n + " HP";
+    }],
+    [/^Нужно 25 золота, у тебя (\d+)$/, function (m, n) {
+      return "Requires 25 gold, you have " + n;
+    }],
+    [/^Кости выпали находкой: «(.+)»\.$/, function (m, name) {
+      return "The dice gave a find: “" + translateString(name) + "”.";
+    }],
+    [/^Кости выпали золотом: \+(\d+)\.$/, function (m, n) {
+      return "The dice gave gold: +" + n + ".";
+    }],    [/^(\d+)\s*зол\.$/, function (m, n) { return n + " gold"; }],
     [/^(\d+)\s*\/\s*(\d+)\s*очков$/, function (m, a, b) {
       return a + " / " + b + " points";
     }],
     [/^(\d+)\s*из\s*(\d+)$/, function (m, a, b) { return a + " of " + b; }],
-    [/^Этаж\s+(\d+)\s*·\s*(.+)$/, function (m, n, rest) {
-      return "Floor " + n + " · " + translateString(rest);
-    }],
     [/^Деревня\s*·\s*(.+)$/, function (m, rest) {
       return "Village · " + translateString(rest);
     }],
@@ -1666,6 +2085,108 @@
     [/^(\d+)\s*этаж$/, function (m, n) { return "floor " + n; }],
     [/^(\d+)\s*уровень$/, function (m, n) { return "level " + n; }],
     [/^(\d+)\s*этажей$/, function (m, n) { return n + " floors"; }],
+    // Банк-штаб: короткие сводки, которые собираются из чисел.
+    [/^этаж (\d+) · (\d+)%$/, function (m, floor, pct) {
+      return "floor " + floor + " · " + pct + "%";
+    }],
+    [/^малых (\d+) · больших (\d+)$/, function (m, small, big) {
+      return "small " + small + " · big " + big;
+    }],
+    [/^руда (\d+) · древесина (\d+) · обломки (\d+)$/,
+      function (m, ore, wood, shard) {
+        return "ore " + ore + " · wood " + wood + " · scraps " + shard;
+      }],
+    [/^— (\d+)% походного золота\.$/, function (m, pct) {
+      return "— " + pct + "% of expedition gold.";
+    }],
+    [/^— (\d+)% золота и три первых боя по слабым темам\.$/, function (m, pct) {
+      return "— " + pct + "% of gold and the first three fights on your weak topics.";
+    }],
+    [/^— (\d+)% золота; снаряжение и зелья остаются в походе\.$/, function (m, pct) {
+      return "— " + pct + "% of gold; gear and potions stay in the expedition.";
+    }],
+    [/^(.+) · уровень (\d+)$/, function (m, name, lvl) {
+      return translateString(name) + " · level " + lvl;
+    }],
+    [/^знакомства (\d+)\/(\d+)$/, function (m, have, need) {
+      return "introductions " + have + "/" + need;
+    }],
+    [/^([✗✓]?\s*ключ от [^·]+) · (.+)$/, function (m, key, rest) {
+      return translateString(key.trim()) + " · " + translateString(rest.trim());
+    }],
+    [/^не хватает: (.+)$/, function (m, rest) {
+      return "missing: " + rest.split(", ").map(function (part) {
+        return translateString(part.trim());
+      }).join(", ");
+    }],
+    // Староста: счётчик глав и строка текущей главы.
+    [/^(\d+) из (\d+) глав$/, function (m, done, total) {
+      return done + " of " + total + " chapters";
+    }],
+    [/^(\d+) раз$/, function (m, n) { return n + (n === "1" ? " time" : " times"); }],
+    [/^(\d+) раза$/, function (m, n) { return n + " times"; }],
+    [/^([IVXLC]+)\. (.+)$/, function (m, num, title) {
+      return num + ". " + translateString(title);
+    }],
+    [/^(\d+) золота и (.+)$/, function (m, gold, rest) {
+      return gold + " gold and " + rest.split(" и ").map(function (part) {
+        return translateString(part.trim());
+      }).join(" and ");
+    }],
+    [/^(\d+) золота$/, function (m, gold) { return gold + " gold"; }],
+    // Кузнец: строки улучшений и цены.
+    [/^Следующий уровень: (.+)$/, function (m, rest) {
+      return "Next level: " + translateString(rest);
+    }],
+    [/^не хватает (\d+)$/, function (m, gold) { return "short by " + gold; }],
+    [/^\+(\d+) здоровья$/, function (m, n) { return "+" + n + " health"; }],
+    [/^\+(\d+) урона$/, function (m, n) { return "+" + n + " damage"; }],
+    [/^\+(\d+) (?:зелье|зелья|зелий) на старте$/,
+      function (m, n) { return "+" + n + " starting potion" + (n === "1" ? "" : "s"); }],
+    [/^\+(\d+)% золота$/, function (m, n) { return "+" + n + "% gold"; }],
+    [/^\+(\d+)% гасимого урона$/, function (m, n) {
+      return "+" + n + "% damage reduction";
+    }],
+    [/^(\d+) (?:уровень|уровня|уровней)$/, function (m, n) {
+      return n + (n === "1" ? " level" : " levels");
+    }],
+    [/^\+1 заряд умения и −(\d+)% к цене улучшений$/, function (m, pct) {
+      return "+1 skill charge and −" + pct + "% to upgrade prices";
+    }],
+    [/^Дом мастера II уступает (\d+)% цены\.$/, function (m, pct) {
+      return "Master's house II lowers prices by " + pct + "%.";
+    }],
+    [/^уровня\. Дом мастера II уступает (\d+)% цены\.$/, function (m, pct) {
+      return "levels. Master's house II lowers prices by " + pct + "%.";
+    }],
+    // Школа: кабинет учителя.
+    [/^«Сегодня — (.+): (.+)»\.$/, function (m, module, lesson) {
+      return "“Today — " + translateString(module) + ": " +
+        translateString(lesson) + ".”";
+    }],
+    [/^(\d+) из (\d+) уроков пройдено$/, function (m, done, total) {
+      return done + " of " + total + " lessons completed";
+    }],
+    [/^\+(\d+) HP · \+(\d+) урона · \+(\d+)% золота$/,
+      function (m, hp, dmg, gold) {
+        return "+" + hp + " HP · +" + dmg + " damage · +" + gold + "% gold";
+      }],
+    [/^Модуль ([IVXLC]+) из ([IVXLC]+)$/, function (m, a, b) {
+      return "Module " + a + " of " + b;
+    }],
+    [/^урок (\d+)$/, function (m, n) { return "lesson " + n; }],
+    [/^Продолжить: (.+)$/, function (m, rest) {
+      return "Continue: " + translateString(rest);
+    }],
+    [/^следующий — (.+)$/, function (m, rest) {
+      return "next — " + translateString(rest);
+    }],
+    [/^(\d+) \/ (\d+) уроков$/, function (m, done, total) {
+      return done + " / " + total + " lessons";
+    }],
+    [/^Зелья: (\d+) · Снаряжение: (\d+)$/, function (m, potions, gear) {
+      return "Potions: " + potions + " · Gear: " + gear;
+    }],
 
     /* --- журнал: собранные строки --- */
     [/^Кампания «(.+)» · глава ([IVXLC]+) из (\d+) · (.+)$/,
@@ -1760,7 +2281,9 @@
       return "Level " + a + " of " + b;
     }],
     [/^Сейчас: (.+)$/, function (m, rest) {
-      return "Now: " + translateString(rest);
+      return "Now: " + rest.split(" · ").map(function (part) {
+        return translateString(part.trim());
+      }).join(" · ");
     }],
     [/^Даёт: (.+)$/, function (m, rest) {
       return "Gives: " + translateString(rest);
@@ -1793,6 +2316,18 @@
     }],
     [/^в кошельке: (\d+)$/, function (m, n) {
       return "in purse: " + n;
+    }],
+    [/^в дороге: (\d+)$/, function (m, n) {
+      return "packed: " + n;
+    }],
+    [/^(\d+) товара$/, function (m, n) {
+      return n + " items";
+    }],
+    [/^в дороге (\d+)\/3$/, function (m, n) {
+      return "packed " + n + "/3";
+    }],
+    [/^Не хватает (\d+) зол\.$/, function (m, n) {
+      return "Need " + n + " gold";
     }],
     [/^ещё (\d+) из (\d+)$/, function (m, a, b) {
       return a + " of " + b + " left";

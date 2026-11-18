@@ -653,3 +653,89 @@
     padding: 8px 14px;
   }
 }
+
+/* ---------- пиксельный гримуар: сохранения ---------- */
+.saves-screen {
+  border: 3px solid #6b5634;
+  border-top-color: #f0c66a;
+  border-radius: 0;
+  background: #0c1420;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.62), inset 0 0 0 2px #05070d;
+}
+.saves-head { border-bottom: 2px solid rgba(214, 168, 75, 0.38); }
+.saves-head h2 {
+  color: #eee4cf;
+  font-family: var(--font-display);
+  text-shadow: 2px 2px 0 #000;
+}
+.saves-close {
+  border: 2px solid rgba(214, 168, 75, 0.38);
+  border-radius: 0;
+  background: #0a1018;
+  box-shadow: 2px 2px 0 #000;
+  color: #f0c66a;
+}
+.save-slot {
+  border: 2px solid rgba(214, 168, 75, 0.2);
+  border-radius: 0;
+  background: #0a1018;
+}
+.save-slot:hover,
+.save-slot:focus-visible { border-color: #d6a84b; }
+.save-slot.is-active {
+  border-color: #d6a84b;
+  background: #1a160d;
+}
+.saves-btn {
+  border: 2px solid rgba(214, 168, 75, 0.38);
+  border-radius: 0;
+  background: #141e2b;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
+  color: #eee4cf;
+  font: 700 10px/1.15 var(--font-data);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.saves-btn.primary {
+  border-color: #f0c66a;
+  background: #f0c66a;
+  color: #1a1205;
+}
+.saves-btn.danger {
+  border-color: rgba(201, 107, 59, 0.7);
+  background: #24100b;
+  color: #e8b09a;
+}
+.saves-btn.ghost {
+  border-color: rgba(214, 168, 75, 0.2);
+  background: #0a1018;
+  color: #b9b3a5;
+}
+
+/* Рамка и пустые ячейки: старые селекторы с ID перекрывали тему. */
+.saves-overlay .saves-screen {
+  border: 3px solid #6b5634 !important;
+  border-top-color: #f0c66a !important;
+  border-radius: 0 !important;
+  background: #0c1420 !important;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.62), inset 0 0 0 2px #05070d !important;
+}
+.saves-overlay .save-slot,
+.saves-overlay .save-slot.is-empty {
+  border: 2px solid rgba(214, 168, 75, 0.24) !important;
+  border-radius: 0 !important;
+  background: #0a1018 !important;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
+}
+.saves-overlay .save-slot.is-empty { border-style: dashed !important; }
+.saves-overlay .save-slot.is-active,
+.saves-overlay .save-slot:hover {
+  border-color: #d6a84b !important;
+  background: #1a160d !important;
+}
+
+.saves-head h2 {
+  font-family: "Handjet", "Golos Text", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}

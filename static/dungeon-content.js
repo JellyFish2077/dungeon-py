@@ -478,7 +478,7 @@ const FLOOR_HAZARD_V1 = [
 // V2: на каждый биом два обычных этажа со средой и арена без неё.
 const FLOOR_HAZARD_V2 = [
   null, "fog", null,         // 1–3: пещеры
-  "dark", "storm", null,     // 4–6: катакомбы
+  "dark", "dark", null,      // 4–6: катакомбы
   "frost", "fog", null,      // 7–9: лёд
   "lava", "embers", null,    // 10–12: демоны
   "dark", "storm", null      // 13–15: логово

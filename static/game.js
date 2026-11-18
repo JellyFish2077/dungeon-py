@@ -117,8 +117,8 @@
           traps: 5, chests: 3, squadChance: 0.20
         },
         {
-          name: "Склепы", w: 50, h: 32, count: 8,
-          pool: ["skeleton", "goblin", "orc", "zombie", "spider"], qmin: 3, qmax: 4,
+          name: "Склепы", w: 50, h: 32, count: 7,
+          pool: ["skeleton", "goblin", "orc", "zombie", "spider"], qmin: 3, qmax: 3,
           roomTarget: 14, optionalShare: 0.38, minJunctions: 3,
           eliteCap: 1, vault: true, camp: true,
           traps: 6, chests: 3, squadChance: 0.25
@@ -2597,6 +2597,10 @@
   let HUB_AMULET_PRICE = 150;   // цена амулета возврата в лавке деревни
   let HUB_AMULET_FIND = 0.02;   // шанс найти амулет в сундуке вместо предмета
   let HUB_AMULET_MAX = 3;       // потолок амулетов у героя
+  // Сундук с выбором: три вещи, игрок берёт одну. Ловушка — редкий щипок
+  // при открытии; она не убивает и видна в окне находки.
+  const CHEST_CHOICE_CHANCE = 0.14;
+  const CHEST_TRAP_CHANCE = 0.10;
 
   // --- Постоянная прогрессия ---
   // Улучшения героя покупаются золотом в деревне и действуют в каждом походе.
@@ -2606,10 +2610,11 @@
   const HERO_STEPS = { hp: 12, dmg: 2, potions: 1, loot: 0.12, armor: 0.08 };
   const HERO_PRICES = { hp: 40, dmg: 50, potions: 60, loot: 55, armor: 70 };
   let HERO_PRICE_STEP = 1.55;
-  // Деревня растёт за материалы: колодец даёт здоровье на каждый поход, амбар —
+  // Деревня растёт за материалы: верстак укрепляет снаряжение и даёт здоровье
+  // на каждый поход, амбар —
   // больше находок и привалов. Кузница не даёт ничего сама — она открывает
   // уровни улучшений героя, поэтому материалы и есть настоящий замок на силе.
-  let VILLAGE_WELL_HP = 10;
+  let VILLAGE_WELL_HP = 10; // внутренний ключ well оставлен ради сохранений
   let VILLAGE_BARN_BONUS = 0.5;
   let VILLAGE_COST_MUL = 1;
   // Кузница II поднимает потолок амулетов возврата на один. Это отдельное
@@ -2685,6 +2690,13 @@
     // Уровни кузницы: вложенное золото навсегда усиливает героя.
     forge: { weapon: 0, armor: 0, vitality: 0 },
     inventory: [],
+    // Ключи от запертых сундуков — ресурс похода. Не путать с ключами
+    // деревни: те лежат в профиле и открывают постройки.
+    lockpicks: 0,
+    // Ключи, лежащие на полу текущего этажа. Подбираются шагом.
+    chestKeyDrops: [],
+    // Случайные события этажа: странник и древний жребий.
+    events: [],
     // Что герой уже видел: справочник показывает только это.
     codex: { items: {}, npcs: {}, enemies: {}, bosses: {} },
     uid: 0,
@@ -2711,6 +2723,12 @@
     minimapZoom: 1,
     // Фильтр сумки: всё, снаряжение или зелья.
     inventoryFilter: "all",
+    // Выбранная вещь в сумке. Храним id, а не индекс: стек и надевание
+    // сдвигают индексы, и карточка прыгала бы на соседний предмет.
+    invSelectedId: "",
+    // На телефоне карточка предмета открывается снизу, а не растягивает
+    // сумку на несколько экранов.
+    invSheetOpen: false,
     stairsDown: null,
     stairsUp: null,
     portal: null,
@@ -2786,7 +2804,7 @@
     // Сама дверь — часть стены, встать на неё нельзя.
     villageReturn: null,
     // Клетки, сквозь которые не пройти, но которые не стены: деревья,
-    // заборы, колодец. Матрица того же размера, что карта (0/1). Стены
+    // заборы, верстак. Матрица того же размера, что карта (0/1). Стены
     // по-прежнему задаёт grid — их отдельно ещё и тени рисуются.
     blocked: null,
     // Номер темы земли для terrainBg. У деревни своя (каменная), у этажа —
@@ -2797,7 +2815,7 @@
     doors: [],
     // Пороги комнат подземелья: только для рисования, ход не перекрывают.
     roomDoors: [],
-    // Двор деревни: деревья, заборы, колодец, костёр. Не препятствия в grid,
+    // Двор деревни: деревья, заборы, верстак, костёр. Не препятствия в grid,
     // поэтому рисуются отдельными объектами.
     scenery: [],
     // Житель, чьё окно сейчас открыто: нужно, чтобы перерисовать его после
@@ -3932,6 +3950,8 @@
       stairsUp: index > 0 ? { x: gen.start.x, y: gen.start.y } : null,
       enemies: [],
       treasures: [],
+      chestKeyDrops: [],
+      events: [],
       tributes: [],
       lootBags: [],
       traders: [],
@@ -4093,6 +4113,8 @@
     state.signs = placeSigns(index, free, used, gen.spots.length);
     state.portal = placePortal(index, free, used, gen.end);
     placeHazards(state, index);
+    placeChestKeys(state, index, used, free);
+    placeFloorEvent(state, index, used, free);
     return state;
   }
 
@@ -4237,6 +4259,67 @@
         placed += 1;
       }
     }
+  }
+
+  function placeChestKeys(state, index, used, free) {
+    // Первый этаж — учебный: без замков и ключей. С третьего этажа
+    // появляется один запертый сундук и один ключ, с шестого — два.
+    const lockedCount = index >= 5 ? 2 : (index >= 1 ? 1 : 0);
+    state.chestKeyDrops = [];
+    if (!lockedCount) return;
+    const chests = shuffle((state.treasures || []).slice());
+    const locks = [];
+    for (const chest of chests) {
+      if (locks.length >= lockedCount) break;
+      if (chest.locked) continue;
+      chest.locked = true;
+      locks.push(chest);
+    }
+    if (!locks.length) return;
+    const spots = shuffle((free || []).filter((spot) => {
+      if (!spot || used.has(key(spot.x, spot.y))) return false;
+      if (!state.map.grid[spot.y] || state.map.grid[spot.y][spot.x] !== 1) return false;
+      if (state.hazard && state.hazard[spot.y] && state.hazard[spot.y][spot.x]) return false;
+      if (Math.hypot(spot.x - state.playerPos.x, spot.y - state.playerPos.y) < 4) return false;
+      if (state.plan) {
+        const role = planCellRole(state.plan, spot.x, spot.y);
+        if (role === "vault" || role === "secret") return false;
+      }
+      return true;
+    }));
+    for (const spot of spots) {
+      if (state.chestKeyDrops.length >= locks.length) break;
+      used.add(key(spot.x, spot.y));
+      state.chestKeyDrops.push({ uid: ++G.uid, x: spot.x, y: spot.y });
+    }
+    // Не оставляем замок без ключа: лучше обычный сундук, чем тупик.
+    for (let i = state.chestKeyDrops.length; i < locks.length; i += 1) {
+      locks[i].locked = false;
+    }
+  }
+
+  // Случайная встреча этажа: не больше одной, и не на первом спуске.
+  // Событие живёт на клетке, пока его не используют; «Уйти» его не тратит.
+  function placeFloorEvent(state, index, used, free) {
+    state.events = [];
+    if (index < 1) return;
+    if (Math.random() >= 0.5) return;
+    const kind = Math.random() < 0.6 ? "wanderer" : "gamble";
+    const spots = shuffle((free || []).filter((spot) => {
+      if (!spot || used.has(key(spot.x, spot.y))) return false;
+      if (!state.map.grid[spot.y] || state.map.grid[spot.y][spot.x] !== 1) return false;
+      if (state.hazard && state.hazard[spot.y] && state.hazard[spot.y][spot.x]) return false;
+      if (Math.hypot(spot.x - state.playerPos.x, spot.y - state.playerPos.y) < 4) return false;
+      if (state.plan) {
+        const role = planCellRole(state.plan, spot.x, spot.y);
+        if (role === "vault" || role === "secret") return false;
+      }
+      return true;
+    }));
+    const spot = spots[0];
+    if (!spot) return;
+    used.add(key(spot.x, spot.y));
+    state.events.push({ uid: ++G.uid, x: spot.x, y: spot.y, kind: kind, used: false });
   }
 
   function placePlanVault(state, index, used) {
@@ -4809,6 +4892,8 @@
     placePlanHazards(state, index, used);
     state.doors = placeRoomDoors(state, used);
     state.map.doors = state.doors;
+    placeChestKeys(state, index, used, free);
+    placeFloorEvent(state, index, used, free);
     return state;
   }
 
@@ -5509,6 +5594,8 @@
       stairsUp: G.stairsUp,
       enemies: G.enemies,
       treasures: G.treasures,
+      chestKeyDrops: G.chestKeyDrops || [],
+      events: G.events || [],
       traders: G.traders,
       traps: G.traps,
       hazard: G.hazard,
@@ -5867,6 +5954,8 @@
     G.stairsUp = state.stairsUp;
     G.enemies = state.enemies;
     G.treasures = state.treasures;
+    G.chestKeyDrops = state.chestKeyDrops || [];
+    G.events = state.events || [];
     G.tributes = state.tributes || [];
     G.lootBags = state.lootBags || [];
     G.traders = state.traders || [];
@@ -5930,7 +6019,7 @@
   // том, что здесь нет монстров, ловушек и среды, а вместо этажа — «место»
   // (G.place). Раскладка лежит текстом в village-content.js.
 
-  // Клетка занята непроходимым объектом: дерево, забор, колодец. Стены
+  // Клетка занята непроходимым объектом: дерево, забор, верстак. Стены
   // проверяются отдельно по grid — они ещё и тень отбрасывают, а объекты нет.
   function cellBlocked(x, y) {
     if (x < 0 || y < 0 || !G.map || x >= G.map.w || y >= G.map.h) return true;
@@ -5946,7 +6035,7 @@
   // вида объекта у костра: вид «fire» занят декором подземелья, значок у него
   // свой («campfire»), и без перевода mapIcon вернул бы чужую картинку.
   const PROP_NAMES = {
-    tree: "Дерево", fence: "Забор", well: "Колодец", fire: "Костёр",
+    tree: "Дерево", fence: "Забор", well: "Верстак", fire: "Костёр",
     barrel: "Бочка", woodpile: "Поленница", chimney: "Труба",
     scaffold: "Строительные леса", sign: "Указатель",
     descent: "Спуск в подземелье",
@@ -5956,7 +6045,7 @@
     board: "Доска задач"
   };
   const PROP_ICONS = {
-    tree: "tree", fence: "fence", well: "well", fire: "campfire",
+    tree: "tree", fence: "fence", well: "workbench", fire: "campfire",
     barrel: "barrel", woodpile: "woodpile", chimney: "chimney",
     scaffold: "woodpile", sign: "sign", descent: "descent",
     table: "table", chair: "chair", bed: "bed", shelf: "shelf",
@@ -6052,7 +6141,7 @@
     const npcs = VILLAGE_NPCS.filter((n) => n.place === npcPlace).map((n) => ({
       uid: ++G.uid, key: n.key, name: n.name, x: n.at.x, y: n.at.y
     }));
-    // Деревья, забор, колодец и костёр рисуются как объекты: в grid это
+    // Деревья, забор, верстак и костёр рисуются как объекты: в grid это
     // обычный пол, поэтому без отдельного списка они были бы невидимы.
     const scenery = src.objects.filter((o) =>
       o.kind === "tree" || o.kind === "fence" || o.kind === "well" || o.kind === "fire" ||
@@ -6063,7 +6152,7 @@
     // В комнатах их нет — там всё как в подземелье, каменным полом.
     const mats = npcPlace === "village"
       ? villageMaterials(src, built) : blankMaterials(src.w, src.h);
-    // Трубы с крыш — такие же уличные объекты, как дерево или колодец.
+    // Трубы с крыш — такие же уличные объекты, как дерево или верстак.
     (mats.props || []).forEach((p) => scenery.push(p));
     return {
       map: { w: src.w, h: src.h, grid: src.grid, decor: src.decor },
@@ -6194,6 +6283,8 @@
     G.ground = kind === "house" ? 11 : VILLAGE_GROUND;
     G.enemies = [];
     G.treasures = [];
+    G.chestKeyDrops = [];
+    G.events = [];
     G.tributes = [];
     G.lootBags = [];
     G.traders = [];
@@ -6277,6 +6368,9 @@
     // в скрытом aria-live-блоке. Цель живёт в HUD, управление — в тосте.
     if (ok && isFirstRun() && !G.firstGoalDone) {
       setTimeout(() => {
+        // Страж мог открыться раньше, чем сработал таймер: поверх окна
+        // подсказка не нужна. Школа и диалоги тоже перекрывают карту.
+        if (G.firstGoalDone || G.schoolOpen || G.dialogNpc) return;
         const touch = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
         toast(touch
           ? "Коснись клетки — идти · тяни карту — камера · кнопка внизу — действие"
@@ -6304,8 +6398,16 @@
   // — памятка, у стража входа — настройка спуска. Одно окно на всех: содержимое
   // собирается под жителя, поэтому новых оверлеев не заводим.
 
-  function dialogHead(title, sub) {
-    return "<div class='battle-head'><div><div class='enemy-name'>" + title + "</div>" +
+  // Портрет жителя для шапки окна: те же пиксельные спрайты, что на карте.
+  function npcPortrait(key) {
+    return (typeof SPRITES !== "undefined" && SPRITES["npc_" + key]) || "";
+  }
+
+  function dialogHead(title, sub, portrait) {
+    return "<div class='battle-head'>" +
+      (portrait ? "<img class='dialog-portrait' src='" + portrait +
+        "' alt='' aria-hidden='true'>" : "") +
+      "<div class='dialog-head-copy'><div class='enemy-name'>" + title + "</div>" +
       "<div class='hud-num'>" + (sub || "") + "</div></div>" +
       "<button class='exit-btn' id='dialog-close' type='button' " +
       "data-tip='Закрыть. Клавиша Escape.'>Закрыть</button></div>";
@@ -6405,8 +6507,25 @@
     }
     const box = el("dialog-box");
     if (!box) return;
+    // Старая запись Наставника не должна продолжать жить в новом окне.
+    stopMentorDemo();
+    clearToast();
+    endWalk();
+    stopHeldMove();
     markCodex("npcs", npc.key);
     G.dialogNpc = npc;
+    box.classList.toggle("mentor-open", npc.key === "mentor");
+    box.classList.toggle("trader-open", npc.key === "trader");
+    box.classList.toggle("bank-open", npc.key === "banker");
+    box.classList.toggle("elder-open", npc.key === "elder");
+    box.classList.toggle("forge-open", npc.key === "blacksmith");
+    box.classList.toggle("master-open", npc.key === "master");
+    box.classList.toggle("barn-open", npc.key === "storekeeper");
+    // Окна деревни и Наставник живут в одном пиксельном языке: жёсткие
+    // рамки, портрет жителя и общие правила кнопок. Остальные окна не задеваем.
+    box.classList.toggle("village-pixel",
+      ["trader", "banker", "elder", "blacksmith", "master", "storekeeper", "mentor"]
+        .indexOf(npc.key) >= 0);
     box.innerHTML = dialogHtml(npc);
     // Единый каркас диалога: шапка остаётся сверху, остальное уходит в
     // прокручиваемое тело, а внизу — спокойная подсказка вместо второй кнопки
@@ -6423,11 +6542,13 @@
       box.appendChild(foot);
     }
     el("dialog-overlay").classList.remove("hidden");
+    if (npc.key === "mentor") initMentorDemo(box);
     const close = el("dialog-close");
     if (close) close.addEventListener("click", closeDialog);
   }
 
   function closeDialog() {
+    stopMentorDemo();
     G.dialogNpc = null;
     el("dialog-overlay").classList.add("hidden");
   }
@@ -6443,126 +6564,542 @@
     return dialogHead(npc.name) + "<p class='lead'>«Здравствуй, герой!»</p>";
   }
 
-  // Лавка торговца: те же предложения, что были в экране-меню.
+  // Лавка торговца: «Прилавок» — категории, список товаров и карточка
+  // выбранного. Короткие категории (2–3 товара) не заставляют прокручивать
+  // всё окно, а статы и семья всегда видны справа.
+  let traderView = { category: "weapon", selected: "gear:bone_dagger", sort: "price" };
+
+  const TRADER_CATS = [
+    { key: "all", name: "Всё", icon: "✧" },
+    { key: "supplies", name: "Расходники", icon: "✦" },
+    { key: "weapon", name: "Оружие", icon: "⚔" },
+    { key: "shield", name: "Щиты", icon: "◈" },
+    { key: "armor", name: "Броня", icon: "▣" },
+    { key: "accessory", name: "Амулеты", icon: "◇" }
+  ];
+
+  function traderOffersFor(category) {
+    const offers = hubShopOffers();
+    if (category === "all") return offers;
+    if (category === "supplies") {
+      return offers.filter((o) =>
+        o.kind === "amulet" || o.kind === "small_potion" || o.kind === "big_potion");
+    }
+    return offers.filter((o) => o.item && o.item.slot === category);
+  }
+
+  const TRADER_SLOT_ORDER = {
+    potion: 0, supplies: 0, weapon: 1, shield: 2, armor: 3, accessory: 4
+  };
+
+  function traderSortOffers(offers) {
+    const list = offers.slice();
+    if (traderView.sort === "slot") {
+      list.sort((a, b) => {
+        const sa = a.item ? TRADER_SLOT_ORDER[a.item.slot] : 0;
+        const sb = b.item ? TRADER_SLOT_ORDER[b.item.slot] : 0;
+        return sa - sb || a.price - b.price;
+      });
+    } else {
+      list.sort((a, b) => a.price - b.price || a.name.localeCompare(b.name, "ru"));
+    }
+    return list;
+  }
+
+  // Состояние витрины меняют только эти две функции: окно перерисовывается
+  // после клика, и те же функции проверяют порядок товаров в тестах.
+  function traderSetSort(key) {
+    traderView.sort = key === "slot" ? "slot" : "price";
+    return traderView.sort;
+  }
+
+  function traderSetCategory(key) {
+    traderView.category = TRADER_CATS.some((c) => c.key === key) ? key : "weapon";
+    traderView.selected = "";
+    traderEnsureSelection(traderOffersFor(traderView.category));
+    return traderView.category;
+  }
+
+  function traderEnsureSelection(offers) {
+    const list = offers || traderOffersFor(traderView.category);
+    if (!list.some((o) => o.kind === traderView.selected)) {
+      traderView.selected = list[0] ? list[0].kind : "";
+    }
+    return list;
+  }
+
+  function traderBuyState(offer, prof) {
+    const gold = (prof.wallet && prof.wallet.gold) || 0;
+    const item = offer.item || null;
+    const gear = !!item && item.slot !== "potion";
+    const owned = gear
+      ? (prof.hub.gear || []).filter((id) => id === item.id).length
+      : 0;
+    if (offer.kind === "amulet" && prof.hub.revive >= amuletCap()) {
+      return { can: false, label: "Максимум", owned: 0 };
+    }
+    if (gear && owned > 0) return { can: false, label: "Уже в дороге", owned: owned };
+    if (gold < offer.price) {
+      return { can: false, label: "Не хватает " + (offer.price - gold) + " зол.", owned: owned };
+    }
+    return { can: true, label: "Купить", owned: owned };
+  }
+
+  function traderStockFor(offer, prof) {
+    if (offer.kind === "amulet") {
+      return "в запасе: " + prof.hub.revive + " из " + amuletCap();
+    }
+    if (offer.kind === "small_potion" || offer.kind === "big_potion") {
+      return "в кошельке: " + (prof.wallet[offer.kind] || 0);
+    }
+    const owned = (prof.hub.gear || []).filter((id) => id === offer.item.id).length;
+    return owned ? "в дороге: " + owned : "нет в дороге";
+  }
+
+  // Сравнение с тем, что уже лежит в дороге. Сравниваем статы с каждой
+  // вещью того же слота: наборы остаются отдельной строкой, поэтому
+  // сравнение не притворяется одним «лучше/хуже».
+  function traderCompareHtml(offer, prof) {
+    const item = offer.item || null;
+    if (!item || item.slot === "potion") return "";
+    if ((prof.hub.gear || []).indexOf(item.id) >= 0) return "";
+    const packed = (prof.hub.gear || []).map((id) => itemById(id))
+      .filter((it) => it && it.slot === item.slot);
+    if (!packed.length) {
+      return "<p class='trader-compare empty'>В дороге пока нет вещей этого слота.</p>";
+    }
+    const tr = typeof window.tr === "function" ? window.tr : (text) => text;
+    const stat = (diff, label, suffix) => {
+      if (!diff) return "";
+      return "<span class='" + (diff > 0 ? "up" : "down") + "'>" +
+        tr(label) + " " + (diff > 0 ? "+" : "−") + Math.abs(diff) + (suffix || "") + "</span>";
+    };
+    const rows = packed.map((was) => {
+      const diffs = [
+        stat((item.atk || 0) - (was.atk || 0), "атака"),
+        stat((item.def || 0) - (was.def || 0), "защита"),
+        stat((item.hp || 0) - (was.hp || 0), "HP"),
+        stat(Math.round(((item.brace || 0) - (was.brace || 0)) * 100), "оборона", "%")
+      ].filter(Boolean);
+      const set = item.set && was.set !== item.set ? setByKey(item.set) : null;
+      return "<li><b>" + was.name + "</b>" +
+        (diffs.length ? " " + diffs.join(" ")
+          : " <span class='same'>" + tr("как эта вещь") + "</span>") +
+        (set ? " <small>" + tr("набор:") + " " + tr(set.name) + "</small>" : "") +
+        "</li>";
+    }).join("");
+    return "<div class='trader-compare'><b>" + tr("Сравнение с дорогой") +
+      "</b><ul>" + rows + "</ul></div>";
+  }
+
   function traderDialogHtml() {
     const prof = hubProfile();
     const gold = prof ? (prof.wallet.gold || 0) : 0;
-    let html = dialogHead("Торговец", "Банк деревни: <b>" + gold + "</b> золота");
+    let html = dialogHead("Торговец", "Банк деревни: <b>" + gold + "</b> золота", npcPortrait("trader"));
     html += "<p class='lead'>Амулеты возврата, зелья и снаряжение в дорогу.</p>";
-    html += "<div class='hub-shop' id='dialog-shop'>" +
-      (prof ? hubShopOffers().map((o) => hubShopCard(o, prof)).join("") : "") + "</div>";
-    if (!prof) html += "<p class='lead'>Войди в аккаунт на главной — тогда будет чем платить.</p>";
+    if (!prof) {
+      html += "<p class='lead'>Войди в аккаунт на главной — тогда будет чем платить.</p>";
+      return html;
+    }
+    const baseOffers = traderEnsureSelection(traderOffersFor(traderView.category));
+    const offers = traderSortOffers(baseOffers);
+    const selected = offers.filter((o) => o.kind === traderView.selected)[0] || offers[0] || null;
+    const potions = (prof.wallet.small_potion || 0) + (prof.wallet.big_potion || 0);
+    const gearCount = (prof.hub.gear || []).length;
+    html += "<div class='trader-summary'>" +
+      "<span>В банке: <b>" + gold + "</b> зол.</span>" +
+      "<span>Зелья: <b>" + potions + "</b></span>" +
+      "<span>Амулеты: <b>" + (prof.hub.revive || 0) + "/" + amuletCap() + "</b></span>" +
+      "<span>В дороге: <b>" + gearCount + "</b></span>" +
+      "</div>";
+    html += "<div class='trader-layout' id='dialog-shop'>";
+    html += "<nav class='trader-rail'>" + TRADER_CATS.map((cat) => {
+      const n = traderOffersFor(cat.key).length;
+      return "<button class='trader-cat" + (traderView.category === cat.key ? " active" : "") +
+        "' type='button' data-trader-cat='" + cat.key + "'>" +
+        "<span class='cat-icon' aria-hidden='true'>" + cat.icon + "</span>" +
+        "<span class='cat-name'>" + cat.name + "</span>" +
+        "<span class='cat-count'>" + n + "</span></button>";
+    }).join("") + "</nav>";
+    html += "<section class='trader-list'>" +
+      "<div class='trader-list-head'><b>" +
+      (TRADER_CATS.filter((c) => c.key === traderView.category)[0] || {}).name +
+      "</b><span class='trader-list-count'>" + offers.length + " товара</span>" +
+      "<span class='trader-sort-group'>" +
+      "<button class='trader-sort" + (traderView.sort === "price" ? " active" : "") +
+      "' type='button' data-trader-sort='price'>Цена</button>" +
+      "<button class='trader-sort" + (traderView.sort === "slot" ? " active" : "") +
+      "' type='button' data-trader-sort='slot'>Слот</button></span></div>" +
+      "<div class='trader-items'>" +
+      offers.map((o) => traderItemHtml(o, prof)).join("") +
+      "</div></section>";
+    html += "<aside class='trader-side'>" + traderDetailHtml(selected, prof) + "</aside>";
+    html += "</div>";
     return html;
+  }
+
+  function traderItemHtml(offer, prof) {
+    const item = offer.item || null;
+    const rarity = item && typeof RARITY !== "undefined" && RARITY[item.rarity]
+      ? RARITY[item.rarity] : null;
+    const bs = traderBuyState(offer, prof);
+    const icon = item ? itemPic(item) : "<span class='trader-glyph' aria-hidden='true'>◇</span>";
+    const stats = item ? itemBonusText(item) : "возрождение на месте";
+    return "<button class='trader-item" +
+      (traderView.selected === offer.kind ? " active" : "") +
+      (bs.owned ? " owned" : "") + "' type='button' data-trader-select='" + offer.kind + "'>" +
+      "<span class='trader-item-icon'>" + icon + "</span>" +
+      "<span class='trader-item-copy'><b>" + offer.name + "</b>" +
+      "<small>" + (stats || offer.note) + "</small>" +
+      (rarity ? "<em style='color:" + rarity.color + "'>" + rarity.name + "</em>" : "") +
+      "</span>" +
+      "<span class='trader-item-price'>" + offer.price + " <i>зол.</i>" +
+      (!bs.can ? "<small>" + bs.label + "</small>" : "") + "</span>" +
+      "</button>";
+  }
+
+  function traderDetailHtml(offer, prof) {
+    if (!offer) return "<div class='trader-empty'>Выбери товар слева.</div>";
+    const item = offer.item || null;
+    const rarity = item && typeof RARITY !== "undefined" && RARITY[item.rarity]
+      ? RARITY[item.rarity] : null;
+    const bs = traderBuyState(offer, prof);
+    const icon = item ? itemPic(item) : "<span class='trader-glyph' aria-hidden='true'>◇</span>";
+    const stats = item ? itemBonusText(item) : "возрождение на месте";
+    const effect = item && item.effect && typeof effectText === "function"
+      ? "<p class='trader-detail-effect'>✦ " + effectText(item) + "</p>" : "";
+    const setLine = item && item.slot !== "potion" ? hubSetLineFor(item, prof) : "";
+    return "<div class='trader-detail'>" +
+      "<div class='trader-detail-top'><span class='trader-detail-icon'>" + icon + "</span>" +
+      "<div><h3>" + offer.name + "</h3>" +
+      (rarity ? "<span class='trader-detail-rarity' style='color:" + rarity.color + "'>" +
+        rarity.name + "</span>" : "") + "</div>" +
+      "<span class='trader-detail-price'>" + offer.price + " зол.</span></div>" +
+      "<p class='trader-detail-stats'>" + stats + "</p>" +
+      effect + setLine +
+      "<p class='trader-detail-desc'>" + (offer.note || "") + "</p>" +
+      traderCompareHtml(offer, prof) +
+      "<div class='trader-detail-foot'><span class='hub-stock'>" +
+      traderStockFor(offer, prof) + "</span>" +
+      "<button class='btn" + (bs.can ? " primary" : " ghost") + " hub-buy' type='button' data-kind='" +
+      offer.kind + "'" + (bs.can ? "" : " disabled") + ">" + bs.label + "</button></div>" +
+      (bs.owned ? "<span class='trader-owned-mark'>уже в дороге</span>" : "") +
+      "</div>";
+  }
+
+  // Строка набора для витрины: показывает, сколько вещей семьи уже лежит
+  // в дороге, но не притворяется, что они надеты.
+  function hubSetLineFor(item, prof) {
+    const key = typeof itemSetKey === "function" ? itemSetKey(item) : "";
+    const def = key && typeof setByKey === "function" ? setByKey(key) : null;
+    if (!def) return "";
+    const tr = typeof window.tr === "function" ? window.tr : (text) => text;
+    const count = (prof.hub.gear || []).map((id) => itemById(id))
+      .filter((it) => it && it.set === key).length;
+    return "<p class='trader-set' style='color:" + def.color + "'>" + def.icon + " " +
+      tr(def.name) + " · " + tr("в дороге") + " " + count + "/3 · " +
+      tr("2 вещи:") + " " + tr(def.twoText) + "; " +
+      tr("3:") + " " + tr(def.threeText) + "</p>";
+  }
+
+  // Банк — штаб деревни: слева всегда виден счёт, справа три раздела.
+  // Раньше окно было одной длинной лентой (кошелёк, рекорд, план деревни,
+  // достижения) и прокручивалось почти вдвое; теперь содержимое разложено
+  // по вкладкам, а ресурсы и следующий шаг остаются на виду.
+  let bankView = { tab: "account" };
+
+  const BANK_TABS = [
+    { key: "account", name: "Счёт", icon: "◈" },
+    { key: "village", name: "Деревня", icon: "⌂" },
+    { key: "awards", name: "Награды", icon: "★" }
+  ];
+
+  function bankSetTab(key) {
+    bankView.tab = BANK_TABS.some((t) => t.key === key) ? key : "account";
+    return bankView.tab;
+  }
+
+  function bankPotionCount(prof) {
+    return (prof.wallet.small_potion || 0) + (prof.wallet.big_potion || 0);
+  }
+
+  function bankMaterialCount(prof) {
+    const loot = prof.loot || {};
+    return (loot.ore || 0) + (loot.wood || 0) + (loot.shard || 0);
+  }
+
+  // Следующий шаг разбит на отдельные строки: локализация переводит каждый
+  // узел, а не склеенную фразу «титул — прогресс».
+  function bankNextStepHtml() {
+    const step = storyStep();
+    if (step) {
+      const ready = goalDone(step.goal);
+      const progress = ready ? "награда ждёт у старосты" : goalProgressText(step.goal);
+      return "<span class='bank-next-line'>" + escText(step.title) + "</span>" +
+        (progress ? "<span class='bank-next-progress'>" + progress + "</span>" : "");
+    }
+    const goal = villagePlanGoal();
+    if (goal) {
+      const status = goal.ready ? "материалы уже собраны" :
+        (missingCostText(buildCost(goal.key)) || "");
+      return "<span class='bank-next-line'>" + goal.title + "</span>" +
+        (goal.effect ? "<span class='bank-next-progress'>" + goal.effect + "</span>" : "") +
+        (status ? "<span class='bank-next-progress'>" + status + "</span>" : "");
+    }
+    return "<span class='bank-next-line'>Сюжет пройден.</span>" +
+      "<span class='bank-next-progress'>Дракон побеждён, деревня поднята до конца — " +
+      "можно спускаться в бездну.</span>";
+  }
+
+  function bankTabsHtml() {
+    return "<nav class='bank-tabs'>" + BANK_TABS.map((tab) =>
+      "<button class='bank-tab" + (bankView.tab === tab.key ? " active" : "") +
+      "' type='button' data-bank-tab='" + tab.key + "'>" +
+      "<span aria-hidden='true'>" + tab.icon + "</span>" + tab.name + "</button>"
+    ).join("") + "</nav>";
+  }
+
+  function bankWealthHtml(prof) {
+    const w = prof.wallet || {};
+    const loot = prof.loot || {};
+    const rev = prof.hub.revive || 0;
+    const cap = amuletCap();
+    const best = prof.dungeonBest;
+    const keys = (loot.keys || []).length;
+    return "<aside class='bank-wealth'>" +
+      "<div class='bank-gold'><span>Золото</span><b>" + (w.gold || 0) + "</b></div>" +
+      "<div class='bank-res'><span>Зелья</span><b>" + bankPotionCount(prof) + "</b>" +
+      "<small>малых " + (w.small_potion || 0) + " · больших " + (w.big_potion || 0) + "</small></div>" +
+      "<div class='bank-res'><span>Амулеты</span><b>" + rev + "/" + cap + "</b>" +
+      "<small>" + "●".repeat(rev) + "○".repeat(Math.max(0, cap - rev)) + "</small></div>" +
+      "<div class='bank-res'><span>Материалы</span><b>" + bankMaterialCount(prof) + "</b>" +
+      "<small>руда " + (loot.ore || 0) + " · древесина " + (loot.wood || 0) +
+      " · обломки " + (loot.shard || 0) + "</small></div>" +
+      (keys ? "<div class='bank-res'><span>Ключи</span><b>" + keys + "</b></div>" : "") +
+      "<div class='bank-record'><span>Рекорд</span><b>" + (best
+        ? "этаж " + best.floors + " · " + best.percent + "%"
+        : "похода ещё не было") + "</b>" +
+        (best && best.victory ? "<small>дракон побеждён</small>" : "") + "</div>" +
+      "<p class='bank-next'><b>Следующий шаг</b>" + bankNextStepHtml() +
+      "</p></aside>";
+  }
+
+  function bankAccountHtml(prof) {
+    const w = prof.wallet || {};
+    const rev = prof.hub.revive || 0;
+    const cap = amuletCap();
+    const dots = "●".repeat(rev) + "○".repeat(Math.max(0, cap - rev));
+    return "<section class='bank-pane'>" +
+      "<h3 class='quest-head'>Счёт</h3>" +
+      "<div class='bank-facts'>" +
+      "<div class='bank-fact'><b>" + (w.gold || 0) + "</b><span>золота в банке</span></div>" +
+      "<div class='bank-fact'><b>" + bankPotionCount(prof) + "</b><span>зелий в запасе</span></div>" +
+      "<div class='bank-fact'><b>" + rev + " / " + cap + "</b><span>амулетов возврата</span></div>" +
+      "<div class='bank-fact'><b>" + bankMaterialCount(prof) + "</b><span>материалов на складе</span></div>" +
+      "</div>" +
+      "<div class='bank-block'><h4>Амулеты возврата</h4>" +
+      "<p class='bank-amulet-line'>" + dots + " <b>" + rev + " из " + cap + "</b></p>" +
+      "<p class='bank-hint'>Амулет срабатывает один раз за поход и возвращает героя " +
+      "на месте. Кузница II поднимает потолок.</p></div>" +
+      "<div class='bank-block'><h4>Что доходит до деревни</h4>" +
+      "<ul class='bank-rules'>" +
+      "<li><b>Победа</b> — всё походное золото и награда за дракона.</li>" +
+      "<li><b>Смерть</b> — " + Math.round(HUB_DEATH_SHARE * 100) +
+      "% походного золота.</li>" +
+      "<li><b>Разбор ошибок</b> — " + Math.round(HUB_KNOWLEDGE_SHARE * 100) +
+      "% золота и три первых боя по слабым темам.</li>" +
+      "<li><b>Свернуть поход</b> — " + Math.round(HUB_RETREAT_SHARE * 100) +
+      "% золота; снаряжение и зелья остаются в походе.</li>" +
+      "</ul><p class='bank-hint'>Зелья, материалы и ключи попадают в банк сразу, " +
+      "ещё в походе.</p></div></section>";
+  }
+
+  function bankVillageHtml() {
+    return "<section class='bank-pane'>" +
+      "<h3 class='quest-head'>План деревни</h3>" +
+      "<p class='bank-hint'>Постройки остаются навсегда. Строка «материалы уже собраны» " +
+      "значит, что уровень можно оплатить прямо здесь.</p>" +
+      "<div class='bank-plan'>" + VILLAGE_ORDER.map((key) => buildBlockHtml(key)).join("") +
+      "</div></section>";
+  }
+
+  function bankAwardsHtml(prof) {
+    const badges = prof.badges || {};
+    const on = ACHIEVEMENTS.filter((a) => badges[a.id]).length;
+    const s = prof.stats || {};
+    return "<section class='bank-pane'>" +
+      "<h3 class='quest-head'>Награды</h3>" +
+      "<div class='bank-award-summary'><b>" + on + " из " + ACHIEVEMENTS.length +
+      "</b><span>открыто</span><span class='bank-award-stats'>Верных ответов: <b>" +
+      (s.correct || 0) + "</b> · Решено задач: <b>" + (s.codeSolved || 0) +
+      "</b> · Походов: <b>" + (s.runs || 0) + "</b></span></div>" +
+      "<div class='bank-badges'>" + badgesHtml(prof) + "</div></section>";
   }
 
   function bankDialogHtml() {
     const prof = hubProfile();
-    const rev = prof && prof.hub ? prof.hub.revive : 0;
-    const best = prof ? prof.dungeonBest : null;
-    let html = dialogHead("Казначей", "Банк деревни");
+    let html = dialogHead("Казначей", "Банк деревни", npcPortrait("banker"));
     if (!prof) {
       html += "<p class='lead'>Войди в аккаунт на главной странице — тогда " +
         "золото, материалы и рекорд будут копиться между походами.</p>";
       return html;
     }
-    html += "<p class='lead'><b>Золото и материалы:</b> " +
-      walletText(prof.wallet) + "</p>";
-    html += "<p class='lead'><b>Амулеты возврата:</b> " +
-      "●".repeat(rev) + "○".repeat(Math.max(0, amuletCap() - rev)) +
-      " (" + rev + " из " + amuletCap() + ")</p>";
-    html += "<p class='lead'><b>Рекорд:</b> " + (best
-      ? "этаж " + best.floors + ", " + best.percent + "%" +
-        (best.victory ? " — победа над драконом" : "")
-      : "подземелье ещё не пройдено") + "</p>";
-    const step = storyStep();
-    if (step) {
-      const ready = goalDone(step.goal);
-      html += "<p class='lead'><b>Следующий шаг:</b> " + escText(step.title) +
-        " — " + (ready ? "награда ждёт у старосты" :
-          (goalProgressText(step.goal) || "поговори со старостой")) + ".</p>";
-    } else {
-      // После дракона сюжет кончается, но деревня — нет: у построек остаются
-      // вторые уровни. Банк ведёт к ближайшей оплаченной постройке, а не
-      // отправляет в бездну сразу.
-      const goal = villagePlanGoal();
-      if (goal) {
-        html += "<p class='lead'><b>Следующий шаг:</b> " + escText(goal.title) +
-          " — " + escText(goal.text) + "</p>";
-      } else {
-        html += "<p class='lead'><b>Сюжет пройден.</b> Дракон побеждён, деревня " +
-          "поднята до конца — можно спускаться в бездну.</p>";
-      }
-    }
-    html += villagePlanHtml();
-    html += badgesHtml(prof);
+    const panes = { account: bankAccountHtml, village: bankVillageHtml, awards: bankAwardsHtml };
+    const pane = panes[bankView.tab] || panes.account;
+    html += "<div class='bank-layout'>" + bankWealthHtml(prof) +
+      "<section class='bank-main'>" + bankTabsHtml() +
+      "<div class='bank-tab-body'>" + pane(prof) + "</div></section></div>";
     return html;
   }
 
-  function elderDialogHtml() {
-    let html = dialogHead("Староста", "Деревня помнит твои походы");
-    html += "<p class='lead'>Банк, рекорд и амулеты — у казначея, " +
-      "в доме на другой стороне площади.</p>";
-    html += questBlockHtml();
-    return html;
+  // Староста — штаб кампании: слева летопись глав и активное поручение,
+  // справа вкладки «Кампания» и «Поручения». Раньше окно было одной лентой
+  // из карточки главы и трёх карточек поручений без общей картины пути.
+  let elderView = { tab: "story" };
+
+  const ELDER_TABS = [
+    { key: "story", name: "Кампания", icon: "◆" },
+    { key: "tasks", name: "Поручения", icon: "✦" }
+  ];
+
+  function elderSetTab(key) {
+    elderView.tab = ELDER_TABS.some((t) => t.key === key) ? key : "story";
+    return elderView.tab;
   }
 
-  // Квестовый блок старосты: глава кампании и повторяемое задание. И то и
-  // другое можно не брать — в подземелье пускают и без квеста, — но с ним
-  // деревня платит золотом и материалами.
-  function questBlockHtml() {
-    const prof = hubProfile();
-    if (!prof) return "";
-    let html = "<h3 class='quest-head'>Кампания · " + CAMPAIGN.title + "</h3>";
-    const step = storyStep();
-    if (!step) {
-      html += "<p class='lead'>«Печати на месте, герой. Осталась только дорога вниз».</p>";
-    } else {
-      const done = goalDone(step.goal);
-      const chapter = storyChapterNumber(prof.quests.story);
-      html += "<div class='build-block'>" +
-        "<div class='hub-card-head'><b>Глава " + chapter + ". " + step.title + "</b>" +
-        "<span class='hub-price'>" + (done ? "готова" : "в работе") + "</span></div>" +
-        "<p class='hub-card-note'>" + step.brief + "</p>" +
-        "<p class='hub-card-note'><b>Где:</b> " + step.place + "</p>" +
-        "<p class='lead'>Награда: " + rewardText(step.reward) + "</p>" +
-        (done
-          ? "<button class='btn quest-claim' type='button' data-quest='story' data-goal=\"" +
-            step.key + "\">Завершить главу</button>"
-          : "<span class='hub-stock'>" + (goalProgressText(step.goal) || "цель ещё не выполнена") + "</span>") +
-        "</div>";
-    }
+  function elderTabsHtml() {
+    return "<nav class='elder-tabs'>" + ELDER_TABS.map((tab) =>
+      "<button class='elder-tab" + (elderView.tab === tab.key ? " active" : "") +
+      "' type='button' data-elder-tab='" + tab.key + "'>" +
+      "<span aria-hidden='true'>" + tab.icon + "</span>" + tab.name + "</button>"
+    ).join("") + "</nav>";
+  }
+
+  function elderSideHtml(prof) {
+    const story = Math.max(0, Math.min(Number(prof.quests.story) || 0, STORY_QUESTS.length));
     const active = prof.quests.active;
     const def = REPEAT_QUESTS[active];
-    html += "<h3 class='quest-head'>Поручения</h3>";
+    let html = "<aside class='elder-side'>" +
+      "<div class='elder-side-head'><b>Кампания · " + CAMPAIGN.title + "</b>" +
+      "<span>" + story + " из " + STORY_QUESTS.length + " глав</span></div>" +
+      "<ol class='elder-chronicle'>" + STORY_QUESTS.map((step, i) => {
+        const state = i < story ? "done" : i === story ? "current" : "locked";
+        return "<li class='elder-chapter " + state + "'>" +
+          "<span class='elder-chapter-mark' aria-hidden='true'>" +
+          (state === "done" ? "✓" : state === "current" ? "◆" : "○") + "</span>" +
+          "<span class='elder-chapter-copy'><b>" + STORY_NUMERALS[i] + ". " + step.title + "</b>" +
+          "<small>" + (state === "done" ? "глава закрыта" :
+            state === "current" ? "сейчас" : "впереди") + "</small></span></li>";
+      }).join("") + "</ol>";
+    html += "<div class='elder-active'>" +
+      "<span class='elder-active-label'>Поручение</span>";
     if (def) {
-      const ready = questProgress() >= def.need;
-      html += "<div class='build-block'>" +
-        "<div class='hub-card-head'><b>" + def.title + "</b><span class='hub-price'>" +
-        questProgress() + " из " + def.need + "</span></div>" +
-        "<p class='hub-card-note'>" + def.text + "</p>" +
-        "<p class='lead'>Награда: " + rewardText(def.reward) + "</p>" +
+      const n = questProgress();
+      const ready = n >= def.need;
+      html += "<b>" + def.title + "</b><small>" + n + " из " + def.need + "</small>" +
+        "<span class='elder-bar" + (ready ? " ready" : "") + "'><i style='width:" +
+        Math.min(100, Math.round((n / def.need) * 100)) + "%'></i></span>" +
+        (ready ? "<em class='elder-ready'>готово к сдаче</em>" : "");
+    } else {
+      html += "<b>не взято</b><small>Можно спуститься и без него.</small>";
+    }
+    html += "</div></aside>";
+    return html;
+  }
+
+  function elderFactHtml(label, value) {
+    return "<div><dt>" + label + "</dt><dd>" + value + "</dd></div>";
+  }
+
+  function elderStoryHtml(prof) {
+    const step = storyStep();
+    if (!step) {
+      return "<section class='elder-pane'>" +
+        "<h3 class='quest-head'>Кампания · " + CAMPAIGN.title + "</h3>" +
+        "<div class='elder-story-card'><div class='elder-story-head'>" +
+        "<span class='elder-story-label'>Печати на месте</span>" +
+        "<h3>Дорога вниз открыта</h3></div>" +
+        "<p class='elder-story-text'>" + CAMPAIGN.epilogue + "</p>" +
+        "<p class='bank-hint'>Поручения остаются: за них деревня платит золотом " +
+        "и материалами в каждом походе.</p></div></section>";
+    }
+    const done = goalDone(step.goal);
+    const chapter = storyChapterNumber(prof.quests.story);
+    const progress = goalProgressText(step.goal);
+    return "<section class='elder-pane'>" +
+      "<div class='elder-story-card'>" +
+      "<div class='elder-story-head'><span class='elder-story-label'>Глава " + chapter +
+      " из " + STORY_QUESTS.length + " · " + (done ? "готова" : "в работе") + "</span>" +
+      "<h3>" + step.title + "</h3><p class='elder-brief'>" + step.brief + "</p></div>" +
+      "<p class='elder-story-text'>" + step.text + "</p>" +
+      "<dl class='elder-facts'>" +
+      elderFactHtml("Где", step.place) +
+      elderFactHtml("Цель", step.objective) +
+      elderFactHtml("Награда", rewardText(step.reward)) +
+      "</dl>" +
+      (done
+        ? "<div class='elder-story-foot'><span class='elder-ready'>глава готова</span>" +
+          "<button class='btn quest-claim' type='button' data-quest='story' data-goal=\"" +
+          step.key + "\">Завершить главу</button></div>"
+        : "<div class='elder-story-foot'><span class='elder-progress'>" +
+          (progress || "цель ещё не выполнена") + "</span></div>") +
+      "</div></section>";
+  }
+
+  function elderTasksHtml(prof) {
+    const active = prof.quests.active;
+    const def = REPEAT_QUESTS[active];
+    let html = "<section class='elder-pane'><h3 class='quest-head'>Поручения</h3>";
+    if (def) {
+      const n = questProgress();
+      const ready = n >= def.need;
+      html += "<div class='elder-task active'>" +
+        "<div class='elder-task-head'><b>" + def.title + "</b><span class='hub-price'>" +
+        n + " из " + def.need + "</span></div>" +
+        "<p class='elder-task-text'>" + def.text + "</p>" +
+        "<span class='elder-bar" + (ready ? " ready" : "") + "'><i style='width:" +
+        Math.min(100, Math.round((n / def.need) * 100)) + "%'></i></span>" +
+        "<div class='elder-task-foot'><span class='elder-task-reward'>Награда: " +
+        rewardText(def.reward) + "</span>" +
         (ready
           ? "<button class='btn quest-claim' type='button' data-quest='repeat' data-goal=\"" +
             active + "\">Забрать награду</button>"
           : "<button class='btn ghost quest-drop' type='button' data-quest='" + active +
-            "'>Отказаться от задания</button>") +
+            "'>Отказаться от задания</button>") + "</div>" +
+        "<p class='bank-hint'>Прогресс считается за один поход; одно поручение за раз.</p>" +
         "</div>";
     } else {
-      html += "<p class='lead'>Без задания тоже можно: в подземелье пускают всегда. " +
-        "С заданием деревня платит.</p><div class='hub-shop'>" +
-        REPEAT_KEYS.map((k) => {
-          const r = REPEAT_QUESTS[k];
-          const done = prof.quests.repeat[k] || 0;
-          return "<div class='hub-card'>" +
-            "<div class='hub-card-head'><b>" + r.title + "</b><span class='hub-price'>" +
+      html += "<p class='bank-hint'>Без задания тоже можно: в подземелье пускают " +
+        "всегда. С заданием деревня платит золотом и материалами.</p>" +
+        "<div class='elder-task-grid'>" + REPEAT_KEYS.map((key) => {
+          const r = REPEAT_QUESTS[key];
+          const done = (prof.quests.repeat || {})[key] || 0;
+          return "<div class='elder-task'>" +
+            "<div class='elder-task-head'><b>" + r.title + "</b><span class='hub-price'>" +
             r.need + (r.need === 1 ? " раз" : " раза") + "</span></div>" +
-            "<p class='hub-card-note'>" + r.text + "</p>" +
-            "<p class='lead'>Награда: " + rewardText(r.reward) + "</p>" +
-            "<span class='hub-stock'>выполнено раз: " + done + "</span>" +
-            "<button class='btn quest-take' type='button' data-quest='" + k +
-            "'>Взять задание</button></div>";
+            "<p class='elder-task-text'>" + r.text + "</p>" +
+            "<span class='elder-task-reward'>Награда: " + rewardText(r.reward) + "</span>" +
+            "<div class='elder-task-foot'><span class='hub-stock'>выполнено раз: " + done +
+            "</span><button class='btn quest-take' type='button' data-quest='" + key +
+            "'>Взять задание</button></div></div>";
         }).join("") + "</div>";
     }
+    return html + "</section>";
+  }
+
+  function elderDialogHtml() {
+    const prof = hubProfile();
+    let html = dialogHead("Староста", "Деревня помнит твои походы", npcPortrait("elder"));
+    if (!prof) {
+      html += "<p class='lead'>Войди в аккаунт на главной странице — тогда " +
+        "кампания и поручения будут копиться между походами.</p>";
+      return html;
+    }
+    html += "<div class='elder-layout'>" + elderSideHtml(prof) +
+      "<section class='elder-main'>" + elderTabsHtml() +
+      "<div class='elder-tab-body'>" +
+      (elderView.tab === "tasks" ? elderTasksHtml(prof) : elderStoryHtml(prof)) +
+      "</div></section></div>";
     return html;
   }
 
@@ -6583,9 +7120,68 @@
     return parts.join(" и ") || "ничего";
   }
 
+  // Запись действий для Наставника: короткая сцена из семи шагов.
+  // Это не настоящий поход, а иллюстрация управления; карта и спрайты —
+  // те же, что в подземелье.
+  const MENTOR_DEMO_STEPS = [
+    { hero: [2, 2], key: "WASD", hold: 1500,
+      text: "Герой у входа. Иди стрелками или WASD — каждый шаг двигает героя." },
+    { hero: [3, 2], key: "Клик", hold: 1300,
+      text: "Можно кликнуть по клетке: герой сам построит маршрут, если путь свободен." },
+    { hero: [3, 2], key: "E", hold: 1600, chest: true, pop: "+40", popAt: [3, 1],
+      text: "E — действие. Сундук рядом открывается: внутри золото и снаряжение." },
+    { hero: [3, 2], key: "Бой", hold: 1500, battle: true,
+      text: "Монстр на пути. Шагни в него — начнётся бой на вопросах." },
+    { hero: [3, 2], key: "Ответ", hold: 1600, hit: true, pop: "−40", popAt: [4, 2],
+      text: "Верный ответ — твой удар. Ошибка передаёт ход врагу." },
+    { hero: [3, 2], key: "Опыт", hold: 1300, victory: true,
+      text: "Победа: опыт и золото. Иногда с врага падает вещь." },
+    { hero: [1, 2], key: "M", hold: 1500, stairs: true,
+      text: "M — карта. Лестница вниз ведёт на следующий этаж." }
+  ];
+
+  let mentorDemo = null;
+
+  function mentorDemoHtml() {
+    const tiles = [];
+    for (let y = 0; y < 4; y += 1) {
+      for (let x = 0; x < 6; x += 1) {
+        const floor = x > 0 && x < 5 && y > 0 && y < 3;
+        tiles.push("<span class='mentor-demo-tile' data-x='" + x + "' data-y='" + y +
+          "' data-floor='" + (floor ? "1" : "0") + "' aria-hidden='true'></span>");
+      }
+    }
+    return "<div class='mentor-demo' id='mentor-demo'>" +
+      "<div class='mentor-demo-head'><span class='mentor-demo-kicker'>Запись действий</span>" +
+      "<span class='mentor-demo-count' id='mentor-demo-count'>1 / " + MENTOR_DEMO_STEPS.length +
+      "</span></div>" +
+      "<div class='mentor-demo-map' id='mentor-demo-map' aria-hidden='true'>" + tiles.join("") +
+      "<div class='mentor-demo-hud' id='mentor-demo-hud'>" +
+      "<span class='demo-chip hero'>Герой<i class='demo-bar'><b></b></i></span>" +
+      "<span class='demo-chip enemy'>Слизь<i class='demo-bar'><b id='mentor-demo-enemy-hp'></b></i></span>" +
+      "</div>" +
+      "<span class='mentor-demo-token token-stairs' style='--cx:1;--cy:1'>" + mapIcon("stairs") + "</span>" +
+      "<span class='mentor-demo-token token-chest' style='--cx:3;--cy:1'>" + mapIcon("treasure") + "</span>" +
+      "<span class='mentor-demo-token token-enemy' style='--cx:4;--cy:2'>" + mapIcon("slime") + "</span>" +
+      "<span class='mentor-demo-token token-hero' id='mentor-demo-hero' style='--cx:2;--cy:2'>" +
+      mapIcon("player_base") + "</span>" +
+      "<span class='mentor-demo-loot' style='--cx:4;--cy:2'>" + mapIcon("lootBag") + "</span>" +
+      "<span class='mentor-demo-pop' id='mentor-demo-pop' aria-hidden='true'></span>" +
+      "</div>" +
+      "<div class='mentor-demo-caption' aria-live='polite'>" +
+      "<span class='mentor-demo-key' id='mentor-demo-key'>WASD</span>" +
+      "<p id='mentor-demo-text'></p></div>" +
+      "<div class='mentor-demo-controls'>" +
+      "<button class='btn primary' type='button' data-demo-action='play' id='mentor-demo-play'>Смотреть</button>" +
+      "<button class='btn ghost' type='button' data-demo-action='replay'>Ещё раз</button>" +
+      "<div class='mentor-demo-dots' id='mentor-demo-dots'></div>" +
+      "</div></div>";
+  }
+
   function mentorDialogHtml() {
-    let html = dialogHead("Наставник", "Как играть");
-    html += "<ul class='mentor-list'>" +
+    let html = dialogHead("Наставник", "Как играть", npcPortrait("mentor"));
+    html += "<div class='mentor-layout'>" +
+      "<div class='mentor-memo'><ul class='mentor-list'>" +
       "<li><b>Ходы</b> — стрелки или WASD. Можно кликнуть по клетке: герой пойдёт сам.</li>" +
       "<li><b>Действие</b> — клавиша E или кнопка внизу: двери, сундуки, торговец, лестницы.</li>" +
       "<li><b>Бой</b> — это урок: сначала вопрос по теме, потом задача на ту же тему. " +
@@ -6596,15 +7192,157 @@
       "доходят до деревни целиком. Золото — на " + Math.round(HUB_DEATH_SHARE * 100) +
       "%, а если вместо него взять разбор ошибок — на " +
       Math.round(HUB_KNOWLEDGE_SHARE * 100) + "% и три первых боя по слабым темам.</li>" +
-      "<li><b>Деревня</b> — колодец, амбар, кузницу и дом мастера восстанавливают за материалы " +
+      "<li><b>Деревня</b> — верстак, амбар, кузницу и дом мастера восстанавливают за материалы " +
       "из подземелья. Кузница даёт улучшения героя, и без неё глубоко не спуститься.</li>" +
       "<li><b>Амулет возврата</b> — второй шанс: поднимет на месте и сохранит поход. " +
       "Унести можно не больше " + amuletCap() + ".</li>" +
       "<li><b>Карта</b> — клавиша M, зум — колесо мыши.</li>" +
-      "</ul>";
+      "</ul></div>" + mentorDemoHtml() + "</div>";
     return html;
   }
 
+  // Настраиваем запись после вставки в DOM: фон клеток — те же тайлы,
+  // что в подземелье, а кнопки и таймер живут только пока окно открыто.
+  function initMentorDemo(box) {
+    stopMentorDemo();
+    const root = box.querySelector("#mentor-demo");
+    if (!root) return;
+    root.querySelectorAll(".mentor-demo-tile").forEach((tile) => {
+      const x = Number(tile.dataset.x);
+      const y = Number(tile.dataset.y);
+      const floor = tile.dataset.floor === "1";
+      const bg = typeof terrainBg === "function" ? terrainBg(0, x, y, floor, 0) : "";
+      if (bg) tile.style.backgroundImage = bg;
+    });
+    const dots = root.querySelector("#mentor-demo-dots");
+    if (dots) {
+      dots.innerHTML = MENTOR_DEMO_STEPS.map((_, i) =>
+        "<button class='mentor-demo-dot' type='button' data-demo-step='" + i +
+        "' aria-label='Шаг " + (i + 1) + "'></button>").join("");
+    }
+    mentorDemo = { root, box, step: 0, playing: false, timer: null, last: MENTOR_DEMO_STEPS.length - 1 };
+    root.addEventListener("click", (ev) => {
+      const t = ev.target;
+      if (!t || !t.closest) return;
+      const action = t.closest("[data-demo-action]");
+      if (action) {
+        if (action.dataset.demoAction === "play") toggleMentorDemo();
+        else if (action.dataset.demoAction === "replay") replayMentorDemo();
+        return;
+      }
+      const dot = t.closest("[data-demo-step]");
+      if (dot) {
+        mentorDemo.step = Number(dot.dataset.demoStep) || 0;
+        renderMentorDemoStep();
+        if (mentorDemo.playing) scheduleMentorDemo();
+      }
+    });
+    renderMentorDemoStep();
+  }
+
+  function stopMentorDemo() {
+    if (mentorDemo && mentorDemo.timer) clearTimeout(mentorDemo.timer);
+    mentorDemo = null;
+  }
+
+  function mentorDemoPlaying(on) {
+    if (!mentorDemo) return;
+    mentorDemo.playing = on;
+    const btn = mentorDemo.root.querySelector("#mentor-demo-play");
+    if (btn) {
+      btn.textContent = on ? "Пауза" : (mentorDemo.step >= mentorDemo.last ? "Ещё раз" : "Смотреть");
+    }
+  }
+
+  function scheduleMentorDemo() {
+    if (!mentorDemo) return;
+    if (mentorDemo.timer) clearTimeout(mentorDemo.timer);
+    const at = mentorDemo.step;
+    mentorDemo.timer = setTimeout(() => {
+      if (!mentorDemo) return;
+      if (!document.body || !document.body.contains(mentorDemo.root) ||
+          el("dialog-overlay").classList.contains("hidden")) {
+        stopMentorDemo();
+        return;
+      }
+      if (mentorDemo.step < mentorDemo.last) {
+        mentorDemo.step += 1;
+        renderMentorDemoStep();
+        scheduleMentorDemo();
+      } else {
+        mentorDemoPlaying(false);
+      }
+    }, MENTOR_DEMO_STEPS[at].hold);
+  }
+
+  function toggleMentorDemo() {
+    if (!mentorDemo) return;
+    if (mentorDemo.playing) {
+      if (mentorDemo.timer) clearTimeout(mentorDemo.timer);
+      mentorDemoPlaying(false);
+      return;
+    }
+    if (mentorDemo.step >= mentorDemo.last) mentorDemo.step = 0;
+    renderMentorDemoStep();
+    mentorDemoPlaying(true);
+    scheduleMentorDemo();
+  }
+
+  function replayMentorDemo() {
+    if (!mentorDemo) return;
+    if (mentorDemo.timer) clearTimeout(mentorDemo.timer);
+    mentorDemo.step = 0;
+    renderMentorDemoStep();
+    mentorDemoPlaying(true);
+    scheduleMentorDemo();
+  }
+
+  function renderMentorDemoStep() {
+    if (!mentorDemo) return;
+    const root = mentorDemo.root;
+    const step = mentorDemo.step;
+    const data = MENTOR_DEMO_STEPS[step];
+    const hero = root.querySelector("#mentor-demo-hero");
+    if (hero) {
+      hero.style.setProperty("--cx", data.hero[0]);
+      hero.style.setProperty("--cy", data.hero[1]);
+    }
+    // Победа остаётся в силе до конца записи: слизень не должен оживать
+    // на шаге с лестницей.
+    const defeated = step >= 5;
+    root.classList.toggle("in-battle", !!data.battle || !!data.hit || !!data.victory);
+    root.classList.toggle("is-hit", !!data.hit);
+    root.classList.toggle("is-victory", defeated);
+    root.classList.toggle("chest-open", step >= 2);
+    root.classList.toggle("loot", defeated);
+    root.classList.toggle("stairs-on", !!data.stairs);
+
+    const count = root.querySelector("#mentor-demo-count");
+    if (count) count.textContent = (step + 1) + " / " + MENTOR_DEMO_STEPS.length;
+    const key = root.querySelector("#mentor-demo-key");
+    if (key) key.textContent = data.key;
+    const text = root.querySelector("#mentor-demo-text");
+    if (text) text.textContent = data.text;
+    const enemyHp = root.querySelector("#mentor-demo-enemy-hp");
+    if (enemyHp) enemyHp.style.width = (step >= 4 ? 0 : 100) + "%";
+    const pop = root.querySelector("#mentor-demo-pop");
+    if (pop) {
+      pop.classList.remove("show");
+      if (data.pop) {
+        pop.textContent = data.pop;
+        if (data.popAt) {
+          pop.style.setProperty("--cx", data.popAt[0]);
+          pop.style.setProperty("--cy", data.popAt[1]);
+        }
+        void pop.offsetWidth;
+        pop.classList.add("show");
+      }
+    }
+    root.querySelectorAll(".mentor-demo-dot").forEach((dot, i) => {
+      dot.classList.toggle("active", i === step);
+      dot.classList.toggle("done", i < step);
+    });
+  }
   // ---------- Школа: курс Python у учителя ----------
   // Курс хранится в профиле: уроки и модули переживают смерть и походы.
   // Учитель — это отдельный НПС в школе, а не Наставник с подсказками.
@@ -6617,6 +7355,87 @@
 
   function courseData() {
     return typeof PY_COURSE !== "undefined" && Array.isArray(PY_COURSE) ? PY_COURSE : [];
+  }
+
+  // Пиксельные иконки модулей: 12×12 сетка прямоугольников, как спрайты
+  // и рамки деревни. Юникод-глифы рядом с пиксель-артом выглядели гладкими.
+  const COURSE_PIXEL_ICONS = {
+    syntax:
+      "<rect x='1' y='2' width='10' height='8' fill='#101a27' stroke='#d6a84b' stroke-width='1'/>" +
+      "<rect x='2' y='3' width='8' height='1' fill='#6b5634'/>" +
+      "<rect x='2' y='5' width='1' height='1' fill='#eee4cf'/>" +
+      "<rect x='3' y='6' width='1' height='1' fill='#eee4cf'/>" +
+      "<rect x='2' y='7' width='1' height='1' fill='#eee4cf'/>" +
+      "<rect x='5' y='6' width='4' height='1' fill='#8cc07c'/>",
+    types:
+      "<rect x='1' y='1' width='4' height='4' fill='#d6a84b'/>" +
+      "<rect x='7' y='1' width='4' height='4' fill='#8cc07c'/>" +
+      "<rect x='4' y='7' width='4' height='4' fill='#eee4cf'/>",
+    operators:
+      "<rect x='2' y='1' width='2' height='6' fill='#d6a84b'/>" +
+      "<rect x='0' y='3' width='6' height='2' fill='#d6a84b'/>" +
+      "<rect x='7' y='4' width='4' height='2' fill='#eee4cf'/>" +
+      "<rect x='7' y='7' width='4' height='2' fill='#eee4cf'/>",
+    strings:
+      "<rect x='2' y='1' width='2' height='4' fill='#d6a84b'/>" +
+      "<rect x='8' y='1' width='2' height='4' fill='#d6a84b'/>" +
+      "<rect x='2' y='7' width='8' height='2' fill='#8cc07c'/>" +
+      "<rect x='2' y='10' width='5' height='1' fill='#eee4cf'/>",
+    control:
+      "<rect x='2' y='2' width='7' height='2' fill='#8cc07c'/>" +
+      "<rect x='8' y='2' width='2' height='4' fill='#8cc07c'/>" +
+      "<rect x='4' y='5' width='6' height='2' fill='#d6a84b'/>" +
+      "<rect x='2' y='5' width='2' height='4' fill='#d6a84b'/>" +
+      "<rect x='2' y='8' width='7' height='2' fill='#eee4cf'/>",
+    collections:
+      "<rect x='1' y='1' width='4' height='4' fill='#d6a84b'/>" +
+      "<rect x='7' y='1' width='4' height='4' fill='#8cc07c'/>" +
+      "<rect x='1' y='7' width='4' height='4' fill='#eee4cf'/>" +
+      "<rect x='7' y='7' width='4' height='4' fill='#c96b3b'/>",
+    functions:
+      "<rect x='4' y='1' width='4' height='2' fill='#d6a84b'/>" +
+      "<rect x='5' y='2' width='2' height='8' fill='#d6a84b'/>" +
+      "<rect x='3' y='5' width='3' height='2' fill='#eee4cf'/>" +
+      "<rect x='8' y='4' width='1' height='5' fill='#8cc07c'/>" +
+      "<rect x='7' y='9' width='3' height='1' fill='#8cc07c'/>",
+    errors:
+      "<rect x='5' y='1' width='2' height='1' fill='#c96b3b'/>" +
+      "<rect x='4' y='2' width='4' height='1' fill='#c96b3b'/>" +
+      "<rect x='3' y='3' width='6' height='1' fill='#c96b3b'/>" +
+      "<rect x='2' y='4' width='8' height='1' fill='#c96b3b'/>" +
+      "<rect x='1' y='5' width='10' height='5' fill='#c96b3b'/>" +
+      "<rect x='5' y='5' width='2' height='3' fill='#0a1018'/>" +
+      "<rect x='5' y='9' width='2' height='1' fill='#0a1018'/>",
+    modules:
+      "<rect x='1' y='2' width='10' height='8' fill='#101a27' stroke='#d6a84b' stroke-width='1'/>" +
+      "<rect x='5' y='4' width='2' height='4' fill='#eee4cf'/>" +
+      "<rect x='3' y='7' width='6' height='1' fill='#eee4cf'/>" +
+      "<rect x='4' y='8' width='4' height='1' fill='#eee4cf'/>"
+  };
+
+  function courseIcon(module, cls) {
+    const inner = COURSE_PIXEL_ICONS[module && module.key] ||
+      "<rect x='3' y='3' width='6' height='6' fill='#d6a84b'/>";
+    return "<span class='school-px" + (cls ? " " + cls : "") + "'>" +
+      "<svg class='school-px-svg' viewBox='0 0 12 12' shape-rendering='crispEdges' " +
+      "aria-hidden='true'>" + inner + "</svg></span>";
+  }
+
+  // Первый непройденный модуль — текущий шаг курса. -1: курс пройден.
+  function courseCurrentIndex(prof) {
+    const list = courseData();
+    for (let i = 0; i < list.length; i += 1) {
+      if (!courseModulePassed(list[i].key, prof)) return i;
+    }
+    return -1;
+  }
+
+  function courseNextLesson(module, prof) {
+    if (!module) return -1;
+    for (let i = 0; i < module.lessons.length; i += 1) {
+      if (!courseLessonDone(module.key, i, prof)) return i;
+    }
+    return -1;
   }
 
   function courseRules() {
@@ -6872,45 +7691,150 @@
     if (lesson.exam && !wasDone) assignCourseQuest(module.key);
   }
 
+  const COURSE_NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"];
+
+  // Главный экран школы — «Кабинет»: слева учитель и сводка, справа
+  // следующий шаг и весь курс. Уроки, экзамены и практика остаются
+  // прежними экранами, меняется только вход в них.
   function schoolModulesHtml() {
     const prof = hubProfile();
     const c = courseState(prof);
     if (!c) return "<p class='lead'>Профиль не найден.</p>";
-    const bonus = courseBonuses(prof);
-    let html = "<p class='lead'>Курс Python: 9 модулей, по три урока. " +
-      "Первый урок в модуле — теория, второй — практика, третий — экзамен. " +
-      "После экзамена учитель даёт домашнее задание.</p>";
-    html += "<p class='mode-note'>Бонус к следующему походу: <b>+" + bonus.hp +
-      " HP</b>, <b>+" + bonus.dmg + " урона</b> и <b>+" +
-      Math.round(bonus.goldPct * 100) + "% золота</b>.</p>";
-    html += "<div class='school-actions'><button class='btn ghost' type='button' " +
-      "data-school-action='practice'>Доска задач: практика</button></div>";
+    const list = courseData();
+    const current = courseCurrentIndex(prof);
+    const module = current >= 0 ? list[current] : null;
     const quest = c.quest;
-    if (quest) {
-      const def = PY_COURSE_QUESTS[quest.module];
-      html += "<div class='school-result'>Домашнее задание: <b>" +
-        (def ? def.text : quest.module) + "</b> · " + quest.progress + "/" + quest.need +
-        (quest.done ? " · готово, забери награду" : "") +
-        " <button class='btn' type='button' data-school-action='quest'>Открыть</button></div>";
-    }
-    html += "<div class='school-grid'>";
-    courseData().forEach((m) => {
-      const unlocked = courseModuleUnlocked(m.key, prof);
-      const passed = courseModulePassed(m.key, prof);
-      const doneCount = m.lessons.filter((l, i) => courseLessonDone(m.key, i, prof)).length;
-      const cls = "school-module" + (unlocked ? "" : " locked") +
-        (passed ? " done" : "") + (quest && quest.module === m.key ? " quest" : "");
-      html += "<button class='" + cls + "' type='button' data-school-action='module' data-module='" +
-        m.key + "'>" +
-        "<span class='school-module-icon'>" + m.icon + "</span>" +
-        "<b>" + m.title + "</b>" +
-        "<small>" + m.note + "</small>" +
-        "<span class='school-module-meta'>" + (passed ? "Пройден" :
-          (unlocked ? doneCount + "/3 уроков" : "Закрыт")) + "</span>" +
-        "</button>";
+    const questDef = quest ? PY_COURSE_QUESTS[quest.module] : null;
+    const bonus = courseBonuses(prof);
+    const next = module ? courseNextLesson(module, prof) : -1;
+    let lessonsDone = 0;
+    list.forEach((m) => {
+      m.lessons.forEach((lesson, i) => {
+        if (courseLessonDone(m.key, i, prof)) lessonsDone += 1;
+      });
     });
-    html += "</div>";
-    return html;
+    const passedCount = list.filter((m) => courseModulePassed(m.key, prof)).length;
+    const totalLessons = list.reduce((n, m) => n + m.lessons.length, 0);
+    let quote;
+    if (!module) {
+      quote = "«Курс пройден. Но дверь в подземелье всё ещё открыта — " +
+        "повтори слабые темы».";
+    } else if (next >= 0) {
+      quote = "«Сегодня — " + module.title + ": " + module.lessons[next].title + "».";
+    } else if (quest) {
+      quote = "«Уроки модуля закрыты. Осталось домашнее задание».";
+    } else {
+      quote = "«Модуль закрыт. Идём дальше».";
+    }
+    const homework = quest
+      ? "<div class='school-cab-homework'><span>Домашнее задание</span><b>" +
+        (questDef ? questDef.text : quest.module) + "</b><small>" +
+        quest.progress + " / " + quest.need + (quest.done ? " · готово" : "") +
+        "</small></div>"
+      : "";
+
+    let big;
+    if (!module) {
+      big = "<div class='school-cab-next done'>" +
+        "<div class='school-cab-next-head'><span class='school-cab-label'>Курс пройден</span>" +
+        "<span class='school-cab-count'>" + COURSE_NUMERALS[list.length - 1] +
+        " из " + COURSE_NUMERALS[list.length - 1] + "</span></div>" +
+        "<h3>Все девять модулей закрыты</h3>" +
+        "<p>Бонус к походу уже в силе. Можно вернуться к практике или повторить любой модуль.</p>" +
+        "<div class='school-cab-next-foot'><span>Бонус к походу: <b>+" + bonus.hp +
+        " HP · +" + bonus.dmg + " урона · +" + Math.round(bonus.goldPct * 100) +
+        "% золота</b></span><button class='btn primary school-action' type='button' " +
+        "data-school-action='practice'>Доска задач</button></div></div>";
+    } else {
+      const lesson = next >= 0 ? module.lessons[next] : null;
+      const chips = module.lessons.map((item, li) => {
+        const done = courseLessonDone(module.key, li, prof);
+        const unlocked = courseLessonUnlocked(module.key, li, prof);
+        const st = done ? "done" : (unlocked ? "current" : "locked");
+        return "<button class='school-cab-lesson " + st + "' type='button'" +
+          (unlocked ? " data-school-action='lesson' data-module='" + module.key +
+            "' data-lesson='" + li + "'" : " disabled") + ">" +
+          "<i>" + (done ? "✓" : unlocked ? "◆" : "○") + "</i>" +
+          "<b>" + item.title + "</b><small>" +
+          (done ? "пройден" : unlocked ? (item.exam ? "экзамен" : "урок " + (li + 1)) : "закрыт") +
+          "</small></button>";
+      }).join("");
+      let action;
+      if (next >= 0) {
+        action = "<button class='btn primary school-action' type='button' " +
+          "data-school-action='lesson' data-module='" + module.key +
+          "' data-lesson='" + next + "'>Продолжить: " + lesson.title + "</button>";
+      } else if (quest) {
+        action = "<button class='btn primary school-action' type='button' " +
+          "data-school-action='quest'>" +
+          (quest.done ? "Забрать награду" : "Домашнее задание") + "</button>";
+      } else {
+        action = "<button class='btn school-action' type='button' disabled>" +
+          "Модуль пройден</button>";
+      }
+      big = "<div class='school-cab-next current'>" +
+        "<div class='school-cab-next-head'><span class='school-cab-label'>" +
+        (next >= 0 ? "Продолжить обучение"
+          : quest ? "Домашнее задание" : "Модуль пройден") + "</span>" +
+        "<span class='school-cab-count'>Модуль " + COURSE_NUMERALS[current] +
+        " из " + COURSE_NUMERALS[list.length - 1] + "</span></div>" +
+        "<h3>" + module.title + "</h3>" +
+        "<p>" + (lesson ? lesson.goal
+          : quest ? (quest.done ? "Задание выполнено — забери награду."
+            : "Уроки модуля пройдены. Осталось домашнее задание.")
+          : module.note) + "</p>" +
+        "<div class='school-cab-lessons'>" + chips + "</div>" +
+        "<div class='school-cab-next-foot'><span>Награда за модуль: <b>" +
+        courseRules().moduleReward + " золота и большое зелье</b></span>" + action +
+        "</div></div>";
+    }
+
+    const rows = list.map((m, mi) => {
+      const passed = courseModulePassed(m.key, prof);
+      const unlocked = courseModuleUnlocked(m.key, prof);
+      const done = m.lessons.filter((lesson, i) => courseLessonDone(m.key, i, prof)).length;
+      const pips = m.lessons.map((lesson, i) => {
+        const st = courseLessonDone(m.key, i, prof) ? "done"
+          : courseLessonUnlocked(m.key, i, prof) ? "current" : "locked";
+        return "<i class='school-cab-pip " + st + "'>" +
+          (st === "done" ? "●" : st === "current" ? "◆" : "○") + "</i>";
+      }).join("");
+      return "<button class='school-cab-row" + (passed ? " done" : "") +
+        (mi === current ? " current" : "") + (unlocked ? "" : " locked") +
+        "' type='button' data-school-action='module' data-module='" + m.key + "'" +
+        (unlocked ? "" : " disabled") + ">" + courseIcon(m, "sm") +
+        "<span class='school-cab-row-copy'><b>" + COURSE_NUMERALS[mi] + ". " + m.title +
+        "</b><small>" + m.note + "</small></span>" +
+        "<span class='school-cab-pips'>" + pips + "</span>" +
+        "<span class='school-cab-row-state'>" + (passed ? "пройден" :
+          (unlocked ? done + " / " + m.lessons.length + " уроков" : "закрыт")) +
+        "</span></button>";
+    }).join("");
+
+    return "<div class='school-cabinet'>" +
+      "<aside class='school-cab-side'>" +
+      "<div class='school-cab-teacher'><img src='" + npcPortrait("teacher") +
+      "' alt='' aria-hidden='true'><b>Учитель</b><p>" + quote + "</p></div>" +
+      "<div class='school-cab-progress'><div class='school-cab-progress-head'>" +
+      "<span>Курс</span><b>" + passedCount + " / " + list.length + "</b></div>" +
+      "<span class='school-cab-bar'><i style='width:" +
+      Math.round((passedCount / Math.max(1, list.length)) * 100) + "%'></i></span>" +
+      "<small>" + lessonsDone + " из " + totalLessons + " уроков пройдено</small></div>" +
+      "<div class='school-cab-bonus'><span>Бонус к походу</span><b>+" + bonus.hp +
+      " HP · +" + bonus.dmg + " урона · +" + Math.round(bonus.goldPct * 100) +
+      "% золота</b></div>" + homework +
+      "<div class='school-cab-side-actions'>" +
+      "<button class='btn ghost school-action' type='button' data-school-action='practice'>" +
+      "Доска задач</button>" +
+      (quest ? "<button class='btn ghost school-action' type='button' " +
+        "data-school-action='quest'>Домашнее задание</button>" : "") +
+      "</div></aside>" +
+      "<section class='school-cab-main'>" + big +
+      "<div class='school-cab-list-head'><b>Весь курс</b><span>" +
+      (module ? "следующий — " + module.title : "все модули пройдены") + "</span></div>" +
+      "<p class='school-cab-hint'>Первый урок — теория, второй — практика, " +
+      "третий — экзамен. После экзамена учитель даёт домашнее задание.</p>" +
+      "<div class='school-cab-list'>" + rows + "</div></section></div>";
   }
 
   function schoolModuleHtml() {
@@ -6918,8 +7842,9 @@
     const module = courseData().find((m) => m.key === schoolView.moduleKey);
     if (!module) return schoolModulesHtml();
     const c = courseState(prof);
-    let html = "<button class='btn ghost' type='button' data-school-action='modules'>← К модулям</button>" +
-      "<h3>" + module.title + "</h3><p class='lead'>" + module.note + "</p>";
+    let html = "<button class='btn ghost school-action' type='button' data-school-action='modules'>← К модулям</button>" +
+      "<h3 class='school-module-title'>" + courseIcon(module, "lg") + module.title + "</h3>" +
+      "<p class='lead'>" + module.note + "</p>";
     if (module.cheat && module.cheat.length) {
       html += "<div class='school-theory'>" + module.cheat
         .map((line) => "<p>• " + line + "</p>").join("") + "</div>";
@@ -7379,10 +8304,16 @@
     if (!box) return;
     const prof = hubProfile();
     const gold = prof && prof.wallet ? prof.wallet.gold || 0 : 0;
-    const head = "<div class='battle-head'><div><div class='enemy-name'>Учитель</div>" +
+    const portrait = npcPortrait("teacher");
+    const head = "<div class='battle-head'>" +
+      (portrait ? "<img class='dialog-portrait' src='" + portrait +
+        "' alt='' aria-hidden='true'>" : "") +
+      "<div class='dialog-head-copy'><div class='enemy-name'>Учитель</div>" +
       "<div class='hud-num'>Курс Python · банк: <b>" + gold + "</b> золота</div></div>" +
       "<button class='exit-btn' id='school-close' type='button' " +
       "data-tip='Закрыть. Клавиша Escape.'>Закрыть</button></div>";
+    box.classList.toggle("school-home", schoolView.mode === "modules");
+    box.classList.add("school-pixel");
     box.innerHTML = head + "<div class='battle-mid school-body'>" + schoolBodyHtml() + "</div>" +
       "<div class='battle-foot'><span class='foot-note'>Esc — закрыть · " +
       "домашнее задание выполняется в подземелье</span></div>";
@@ -7394,7 +8325,10 @@
   function openSchool() {
     const overlay = el("school-overlay");
     if (!overlay) return;
+    clearToast();
     G.schoolOpen = true;
+    endWalk();
+    stopHeldMove();
     markCodex("npcs", "teacher");
     schoolView = { mode: "modules", moduleKey: null, lessonIndex: 0,
       questions: [], answers: [], submitted: false, score: 0,
@@ -7407,6 +8341,7 @@
   function openPracticeBoard() {
     const overlay = el("school-overlay");
     if (!overlay) return;
+    clearToast();
     G.schoolOpen = true;
     schoolView = { mode: "practice", moduleKey: null, lessonIndex: 0,
       questions: [], answers: [], submitted: false, score: 0,
@@ -7495,13 +8430,42 @@
   }
 
   // Прибавка за уровень: у здоровья и силы — единицы, у добычи и брони — проценты.
-  function heroStepText(kind) {
-    const step = HERO_STEPS[kind] || 0;
-    if (kind === "loot" || kind === "armor") return "+" + Math.round(step * 100) + "%";
-    return "+" + Math.round(step);
+  // Склонение зелий: «1 зелье», «2 зелья», «5 зелий».
+  function potionWord(n) {
+    const d = n % 10;
+    const dd = n % 100;
+    if (dd >= 11 && dd <= 14) return "зелий";
+    if (d === 1) return "зелье";
+    if (d >= 2 && d <= 4) return "зелья";
+    return "зелий";
   }
 
-  // Улучшение героя: уровень, что даёт и цена следующего.
+  // Сколько улучшение даёт на текущем уровне — суммой, а не шагом.
+  function heroTotalLine(kind) {
+    const level = heroLevel(kind);
+    const step = HERO_STEPS[kind] || 0;
+    if (kind === "loot") return "+" + Math.round(level * step * 100) + "% золота";
+    if (kind === "armor") return "+" + Math.round(level * step * 100) + "% гасимого урона";
+    if (kind === "potions") {
+      return "+" + level + " " + potionWord(level) + " на старте";
+    }
+    const unit = kind === "hp" ? "здоровья" : kind === "dmg" ? "урона" : "";
+    return "+" + Math.round(level * step) + " " + unit;
+  }
+
+  // Прибавка одного следующего уровня — с правильным словом и без «% %».
+  function heroStepLine(kind) {
+    const step = HERO_STEPS[kind] || 0;
+    if (kind === "loot") return "+" + Math.round(step * 100) + "% золота";
+    if (kind === "armor") return "+" + Math.round(step * 100) + "% гасимого урона";
+    if (kind === "potions") {
+      const n = Math.round(step);
+      return "+" + n + " " + potionWord(n) + " на старте";
+    }
+    return "+" + Math.round(step) + (kind === "hp" ? " здоровья" : " урона");
+  }
+
+  // Улучшение героя: полоска уровней, текущая прибавка и цена следующей.
   function heroUpgradeCard(u, prof) {
     const level = heroLevel(u.kind);
     const cap = heroCap(u.kind);
@@ -7509,52 +8473,162 @@
     const price = maxed ? 0 : heroPrice(u.kind, level);
     const gold = (prof && prof.wallet.gold) || 0;
     const can = !maxed && gold >= price;
-    let html = "<div class='hub-card'>" +
-      "<div class='hub-card-head'><b>" + u.name + "</b><span class='hub-price'>" +
-      (maxed ? "максимум" : price + " зол.") + "</span></div>" +
-      "<p class='hub-card-note'>Уровень " + level + " из " + cap + ": " + heroStepText(u.kind) +
-      " " + u.unit + "</p>";
-    html += "<span class='hub-stock'>" + (maxed
-      ? "выше не поднять"
-      : (gold >= price ? "хватает золота" : "не хватает " + (price - gold))) + "</span>" +
+    const pips = "●".repeat(Math.max(0, level)) +
+      "○".repeat(Math.max(0, cap - level));
+    return "<div class='forge-card" + (maxed ? " maxed" : "") + "'>" +
+      "<div class='forge-card-head'><b>" + u.name + "</b>" +
+      "<span class='forge-pips' aria-hidden='true'>" + pips + "</span></div>" +
+      "<p class='forge-level'>Уровень " + level + " из " + cap + "</p>" +
+      "<p class='forge-now'>Сейчас: <b>" + heroTotalLine(u.kind) + "</b></p>" +
+      (maxed
+        ? "<p class='forge-next'>выше не поднять</p>"
+        : "<p class='forge-next'>Следующий уровень: " + heroStepLine(u.kind) + "</p>" +
+          "<span class='forge-stock'>" +
+          (gold >= price ? "хватает золота" : "не хватает " + (price - gold)) + "</span>") +
+      "<div class='forge-card-foot'><span class='forge-price'>" +
+      (maxed ? "максимум" : price + " зол.") + "</span>" +
       "<button class='btn" + (can ? "" : " ghost") + " upg-buy' type='button' data-upg=\"" +
-      u.kind + "\"" + (can ? "" : " disabled") + ">Улучшить</button></div>";
-    return html;
+      u.kind + "\"" + (can ? "" : " disabled") + ">" +
+      (maxed ? "Максимум" : "Улучшить") + "</button></div>" +
+      "</div>";
+  }
+
+  function forgeSideHtml(prof) {
+    const gold = (prof.wallet && prof.wallet.gold) || 0;
+    const bought = HERO_UPGRADE_LIST.reduce((sum, u) => sum + heroLevel(u.kind), 0);
+    const total = HERO_UPGRADE_LIST.reduce((sum, u) => sum + heroCap(u.kind), 0);
+    return "<aside class='forge-side'>" +
+      "<div class='bank-gold'><span>Золото</span><b>" + gold + "</b></div>" +
+      "<div class='forge-build'>" + buildBlockHtml("forge") + "</div>" +
+      "<div class='forge-totals'><span>Улучшения героя</span><b>" + bought + " / " + total +
+      "</b><small>куплено уровней</small><ul>" +
+      HERO_UPGRADE_LIST.map((u) =>
+        "<li><span>" + u.name + "</span><b>" + heroTotalLine(u.kind) + "</b></li>").join("") +
+      "</ul></div></aside>";
   }
 
   function forgeDialogHtml() {
     const prof = hubProfile();
-    const gold = prof ? (prof.wallet.gold || 0) : 0;
-    const cap = upgradeCap();
-    let html = dialogHead("Кузнец", "Банк деревни: <b>" + gold + "</b> золота");
-    html += buildBlockHtml("forge");
-    if (!cap) {
-      html += "<p class='lead'>Горн ещё не разожжён — улучшать нечего. " +
-        "Восстанови кузницу, и я примусь за работу.</p>";
+    let html = dialogHead("Кузнец", "Горн и улучшения героя", npcPortrait("blacksmith"));
+    if (!prof) {
+      html += "<p class='lead'>Войди в аккаунт на главной странице — тогда " +
+        "улучшения и материалы будут копиться между походами.</p>";
       return html;
     }
-    html += "<p class='lead'>Улучшения остаются навсегда и действуют в каждом походе. " +
-      "Кузница открывает <b>" + cap + "</b> уровня" +
-      (villageLevel("smith") > 0 ? "." :
-        ", дом мастера поднимет потолок до пятого и удешевит работу.") +
-      (villageLevel("smith") >= 2
-        ? " Дом мастера II уступает " + Math.round(VILLAGE_SMITH_DISCOUNT * 100) +
-          "% цены." : "") + "</p>";
-    html += "<div class='hub-shop' id='dialog-upgrades'>" +
-      HERO_UPGRADE_LIST.map((u) => heroUpgradeCard(u, prof)).join("") + "</div>";
+    const cap = upgradeCap();
+    html += "<div class='forge-layout'>" + forgeSideHtml(prof) +
+      "<section class='forge-main'>";
+    if (!cap) {
+      html += "<div class='forge-locked'><b>Горн ещё не разожжён</b>" +
+        "<p>Восстанови кузницу — и я примусь за работу. Она открывает первые " +
+        "три уровня улучшений; дом мастера поднимет потолок до пятого и " +
+        "удешевит работу.</p></div>";
+    } else {
+      html += "<h3 class='quest-head'>Улучшения героя</h3>" +
+        "<p class='bank-hint'>Улучшения остаются навсегда и действуют в каждом походе. " +
+        "Кузница открывает <b>" + cap + "</b> уровня" +
+        (villageLevel("smith") > 0 ? "." :
+          ", дом мастера поднимет потолок до пятого и удешевит работу.") +
+        (villageLevel("smith") >= 2
+          ? " Дом мастера II уступает " + Math.round(VILLAGE_SMITH_DISCOUNT * 100) +
+            "% цены." : "") + "</p>" +
+        "<div class='forge-grid' id='dialog-upgrades'>" +
+        HERO_UPGRADE_LIST.map((u) => heroUpgradeCard(u, prof)).join("") + "</div>";
+    }
+    html += "</section></div>";
     return html;
   }
 
-  function masterDialogHtml() {
-    let html = dialogHead("Мастер", "Мастерская");
-    html += "<p class='lead'>«Ключ нашёлся — и верстак снова в деле. " +
-      "Твои улучшения я подниму до пятого уровня, а за работу уступлю в цене».</p>";
-    if (villageLevel("smith") > 0) {
-      html += "<p class='lead'><b>Улучшения героя:</b> потолок " + upgradeCap() +
-        " уровней" + (villageLevel("smith") >= 2
-          ? ", скидка " + Math.round(VILLAGE_SMITH_DISCOUNT * 100) + "%." : ".") + "</p>";
+  // Печать мастера — награда главы «Дверь мастера». Окно показывает, где она
+  // сейчас: впереди, в работе, готова к выдаче или уже открывает десятый этаж.
+  function masterSealHtml(prof) {
+    const idx = STORY_QUESTS.findIndex((q) => q.key === "smith");
+    const story = Math.max(0, Math.min(Number(prof.quests.story) || 0, STORY_QUESTS.length));
+    const hasSeal = typeof hasKey === "function" && hasKey("seal2");
+    let state = "впереди";
+    let note = "Вторая печать ждёт в главе «Дверь мастера».";
+    if (hasSeal) {
+      state = "печать у тебя";
+      note = "Спуск на десятый этаж и ниже открыт.";
+    } else if (story === idx) {
+      const done = goalDone("smith");
+      state = done ? "глава готова" : "глава в работе";
+      note = done ? "Забери награду у старосты — печать мастера."
+        : "Сначала восстанови дом мастера и вернись к старосте.";
+    } else if (story > idx) {
+      state = "печать получена";
+      note = "Спуск на десятый этаж открыт.";
     }
-    html += buildBlockHtml("smith");
+    return "<div class='master-seal'><span class='master-seal-label'>Печать мастера</span>" +
+      "<b>" + state + "</b><small>" + note + "</small></div>";
+  }
+
+  // Склонение уровней: «1 уровень», «3 уровня», «5 уровней».
+  function levelWord(n) {
+    const d = n % 10;
+    const dd = n % 100;
+    if (dd >= 11 && dd <= 14) return "уровней";
+    if (d === 1) return "уровень";
+    if (d >= 2 && d <= 4) return "уровня";
+    return "уровней";
+  }
+
+  // Потолок улучшений: сколько уровней даёт кузница и сколько добавляет дом.
+  function masterCapHtml() {
+    const forgeOn = villageLevel("forge") > 0;
+    const smithOn = villageLevel("smith") > 0;
+    const cap = upgradeCap();
+    return "<div class='master-cap'>" +
+      "<div class='master-cap-head'><b>Потолок улучшений</b><span>" +
+      (cap ? cap + " " + levelWord(cap) : "закрыт") + "</span></div>" +
+      "<div class='master-cap-sources'>" +
+      "<span class='" + (forgeOn ? "on" : "") + "'>Кузница · 3</span>" +
+      "<span class='" + (smithOn ? "on" : "") + "'>Дом мастера · 5</span></div>" +
+      "<div class='master-stats'>" + HERO_UPGRADE_LIST.map((u) => {
+        const level = heroLevel(u.kind);
+        const capKind = heroCap(u.kind);
+        return "<div class='master-stat'><span>" + u.name + "</span>" +
+          "<b>" + level + " / " + capKind + "</b>" +
+          "<i aria-hidden='true'>" + "●".repeat(Math.max(0, level)) +
+          "○".repeat(Math.max(0, capKind - level)) + "</i></div>";
+      }).join("") + "</div>" +
+      (forgeOn ? "" : "<p class='bank-hint'>Кузница ещё не разожжена: " +
+        "улучшать пока нечего.</p>") + "</div>";
+  }
+
+  function masterAbilitiesHtml(prof) {
+    const unlocked = abilityUnlocked();
+    const pick = (prof.ability && prof.ability.pick) || "";
+    return "<div class='master-abilities" + (unlocked ? "" : " locked") + "'>" +
+      ABILITY_KEYS.map((key) => {
+        const a = ABILITIES[key];
+        const on = unlocked && pick === key;
+        return "<div class='master-ability" + (on ? " active" : "") + "'>" +
+          "<b>" + a.name + "</b><p>" + a.desc + "</p>" +
+          "<span>" + (on ? "выбрано" : unlocked ? "доступно" : "закрыто") +
+          "</span></div>";
+      }).join("") + "</div>";
+  }
+
+  function masterDialogHtml() {
+    const prof = hubProfile();
+    let html = dialogHead("Мастер", "Мастерская: потолок, умения и печать", npcPortrait("master"));
+    if (!prof) {
+      html += "<p class='lead'>Войди в аккаунт на главной странице — тогда " +
+        "дом мастера, умения и печати будут копиться между походами.</p>";
+      return html;
+    }
+    const smithOn = villageLevel("smith") > 0;
+    html += "<div class='master-layout'>" +
+      "<aside class='master-side'>" + buildBlockHtml("smith") +
+      masterSealHtml(prof) + "</aside>" +
+      "<section class='master-main'>" + masterCapHtml() +
+      "<h3 class='quest-head'>Умения похода</h3>" +
+      "<p class='bank-hint'>" + (smithOn
+        ? "Выбор умения — в «Свитке похода» у стража. Зарядов на поход: <b>" +
+          abilityCharges() + "</b>."
+        : "Умения откроются, когда дом мастера будет восстановлен.") + "</p>" +
+      masterAbilitiesHtml(prof) + "</section></div>";
     return html;
   }
 
@@ -7562,17 +8636,24 @@
   // можно взять в этом походе.
   function barnSupplyCardHtml(offer, prof) {
     const left = Math.max(0, offer.cap - barnBoughtCount(offer.key, prof));
-    const can = left > 0 && canPayBuild(offer.cost);
-    let stock = "";
-    if (left <= 0) stock = "<span class='hub-stock full'>на этот поход взято</span>";
-    else stock = "<span class='hub-stock'>ещё " + left + " из " + offer.cap + "</span>";
-    return "<div class='hub-card'>" +
-      "<div class='hub-card-head'><b>" + offer.name + "</b><span class='hub-price'>" +
-      costHtml(offer.cost) + "</span></div>" +
-      "<p class='hub-card-note'>" + offer.note + "</p>" +
-      stock +
-      "<button class='btn" + (can ? "" : " ghost") + " barn-buy' type='button' data-supply=\"" +
-      offer.key + "\"" + (can ? "" : " disabled") + ">Взять</button>" +
+    const barnOn = villageLevel("barn") > 0;
+    const can = barnOn && left > 0 && canPayBuild(offer.cost);
+    const icon = offer.key === "small" ? ITEM_SPRITES.small_potion
+      : offer.key === "big" ? ITEM_SPRITES.big_potion : ITEM_SPRITES.rusty_sword;
+    const reason = barnOn && left > 0 && !canPayBuild(offer.cost)
+      ? "не хватает материалов" : "";
+    const stock = !barnOn ? "склад закрыт"
+      : left <= 0 ? "на этот поход взято"
+      : "ещё " + left + " из " + offer.cap;
+    return "<div class='barn-offer" + (can ? "" : " locked") + "'>" +
+      "<div class='barn-offer-head'><img src='" + icon + "' alt='' aria-hidden='true'>" +
+      "<div class='barn-offer-copy'><b>" + offer.name + "</b><small>" +
+      offer.note + "</small></div></div>" +
+      "<div class='barn-offer-cost'><span>Цена</span><b>" + costHtml(offer.cost) + "</b></div>" +
+      "<div class='barn-offer-foot'><span class='barn-stock'>" + stock + "</span>" +
+      "<button class='btn" + (can ? " primary" : " ghost") + " barn-buy' type='button' " +
+      "data-supply=\"" + offer.key + "\"" + (can ? "" : " disabled") + ">Взять</button></div>" +
+      (reason ? "<span class='barn-reason'>" + reason + "</span>" : "") +
       "</div>";
   }
 
@@ -7632,16 +8713,33 @@
 
   function barnDialogHtml() {
     const prof = hubProfile();
-    let html = dialogHead("Кладовщик", "Припасы деревни");
-    html += buildBlockHtml("barn");
-    if (prof) {
-      html += "<p class='lead'><b>На складе:</b> " + LOOT_KINDS.map((k) =>
-        LOOT_NAMES[k] + " " + (prof.loot[k] || 0)).join(" · ") + "</p>";
-      html += "<h3 class='quest-head'>Снаряжение в дорогу</h3>" +
-        "<p class='lead'>Материалы можно обменять на припасы. Обмен ограничен " +
-        "на один поход: новый поход — новая партия.</p>" +
-        BARN_SUPPLIES.map((offer) => barnSupplyCardHtml(offer, prof)).join("");
+    let html = dialogHead("Кладовщик", "Припасы деревни", npcPortrait("storekeeper"));
+    if (!prof) {
+      html += "<p class='lead'>Войди в аккаунт на главной странице — тогда " +
+        "склад, зелья и снаряжение будут копиться между походами.</p>";
+      return html;
     }
+    const wallet = prof.wallet || {};
+    const potions = (wallet.small_potion || 0) + (wallet.big_potion || 0);
+    const gear = (prof.hub && Array.isArray(prof.hub.gear)) ? prof.hub.gear.length : 0;
+    html += "<div class='barn-layout'>" +
+      "<aside class='barn-side'>" +
+      "<div class='barn-materials'><span class='barn-side-label'>На складе:</span>" +
+      "<div class='barn-mat-list'>" + LOOT_KINDS.map((k) =>
+        "<div class='barn-mat'><span>" + LOOT_NAMES[k] + "</span><b>" +
+        (prof.loot[k] || 0) + "</b></div>").join("") +
+      "<div class='barn-mat'><span>Ключи</span><b>" +
+      ((prof.loot.keys || []).length) + "</b></div></div></div>" +
+      "<div class='barn-build'>" + buildBlockHtml("barn") + "</div>" +
+      "<div class='barn-wallet'><span>В банке</span><b>Зелья: " + potions +
+      " · Снаряжение: " + gear + "</b></div></aside>" +
+      "<section class='barn-main'>" +
+      "<h3 class='quest-head'>Снаряжение в дорогу</h3>" +
+      "<p class='bank-hint'>Материалы можно обменять на припасы. Обмен ограничен " +
+      "на один поход: новый поход — новая партия.</p>" +
+      "<div class='barn-grid'>" +
+      BARN_SUPPLIES.map((offer) => barnSupplyCardHtml(offer, prof)).join("") +
+      "</div></section></div>";
     return html;
   }
 
@@ -7706,18 +8804,25 @@
     return true;
   }
 
-  // Окно входа в подземелье: статичная вёрстка (сложность, режим, спуск).
+  // Окно входа в подземелье: форма нового похода и отдельная карточка
+  // сохранённого. Сложность, режим, знамение и умение всегда видны в правой
+  // сводке, поэтому окно не нужно прокручивать.
   function openEntrance() {
     // Игрок нашёл стража — подсказка «Первый спуск» больше не нужна.
     G.firstGoalDone = true;
     markCodex("npcs", "guard");
+    // Подсказка управления живёт поверх карты несколько секунд. Модальное
+    // окно стража не должно делить экран с тостом.
+    clearToast();
     renderOmenPick();
     renderAbilityPick();
     el("entrance-overlay").classList.remove("hidden");
+    applyEntranceDensity();
     updateResumeButton();
     updateWalletLine();
     updateKnowledgeLine();
     updateHud();
+    renderEntranceSummary();
     // Окно — модальное: фокус должен оказаться в нём, а не остаться на
     // кнопке меню или в шапке. «Продолжить» важнее «Спуститься», если поход
     // уже ждёт.
@@ -7731,20 +8836,37 @@
     }
   }
 
+  // На узком или низком экране длинные разделы свёрнуты: окно целиком
+  // помещается в видимую область, а выбранное значение остаётся в заголовке
+  // раздела и в правой сводке. На обычном десктопе всё раскрыто.
+  function applyEntranceDensity() {
+    const tight = window.matchMedia
+      ? window.matchMedia("(max-width: 920px), (max-height: 760px)").matches
+      : false;
+    ["omen-section", "ability-section"].forEach((id) => {
+      const box = el(id);
+      if (box) box.open = !tight;
+    });
+  }
+
   // Выбор знамения: не сохраняется в профиль, потому что это ставка
   // конкретного похода, а не постоянное умение.
   function renderOmenPick() {
     const box = el("omen-list");
     const note = el("omen-note");
+    const current = el("omen-current");
     if (!box) return;
     const pick = currentOmen().key;
     box.innerHTML = OMEN_KEYS.map((key) => {
       const o = OMENS[key];
-      return "<div class='mode" + (key === pick ? " active" : "") + "' data-omen='" + key +
-        "' role='radio' aria-checked='" + (key === pick ? "true" : "false") + "' tabindex='0'>" +
-        "<span class='mode-mark' aria-hidden='true'></span><b>" + o.name + "</b>" +
-        "<span class='mode-note'>" + o.good + " " + o.extra + "</span></div>";
+      return "<button class='omen-card" + (key === pick ? " active" : "") + "' type='button'" +
+        " data-omen='" + key + "' role='radio' aria-checked='" + (key === pick ? "true" : "false") + "'>" +
+        "<span class='omen-icon' aria-hidden='true'>" + o.icon + "</span>" +
+        "<span class='omen-copy'><b>" + o.name + "</b>" +
+        "<span class='omen-good'>" + o.good + "</span>" +
+        "<span class='omen-extra'>" + o.extra + "</span></span></button>";
     }).join("");
+    if (current) current.textContent = currentOmen().name;
     if (note) {
       note.textContent = "Знамение действует весь поход и не меняет сложность боя.";
     }
@@ -7754,6 +8876,7 @@
     if (!OMENS[key]) return false;
     G.omen = key;
     renderOmenPick();
+    renderEntranceSummary();
     return true;
   }
 
@@ -7762,19 +8885,27 @@
   function renderAbilityPick() {
     const box = el("ability-list");
     const wrap = el("ability-pick");
+    const section = el("ability-section");
     const note = el("ability-note");
+    const current = el("ability-current");
     if (!box || !wrap) return;
     const unlocked = abilityUnlocked();
     wrap.classList.toggle("hidden", !unlocked);
-    if (!unlocked) return;
+    if (section) section.classList.toggle("hidden", !unlocked);
+    if (!unlocked) {
+      if (current) current.textContent = "закрыто";
+      return;
+    }
     const pick = chosenAbility();
     box.innerHTML = ABILITY_KEYS.map((key) => {
       const a = ABILITIES[key];
-      return "<div class='mode" + (key === pick ? " active" : "") + "' data-ab='" + key +
-        "' role='radio' aria-checked='" + (key === pick ? "true" : "false") + "' tabindex='0'>" +
-        "<span class='mode-mark' aria-hidden='true'></span><b>" + a.name + "</b>" +
-        "<span class='mode-note'>" + a.desc + "</span></div>";
+      return "<button class='ability-card" + (key === pick ? " active" : "") + "' type='button'" +
+        " data-ab='" + key + "' role='radio' aria-checked='" + (key === pick ? "true" : "false") + "'>" +
+        "<span class='ability-icon' aria-hidden='true'>" + (a.icon || "·") + "</span>" +
+        "<span class='ability-copy'><b>" + a.name + "</b>" +
+        "<span class='ability-desc'>" + a.desc + "</span></span></button>";
     }).join("");
+    if (current) current.textContent = pick && ABILITIES[pick] ? ABILITIES[pick].name : "не выбрано";
     if (note) {
       note.textContent = "Зарядов на поход: " + abilityCharges() +
         " — пополняются у костров в подземелье.";
@@ -7791,7 +8922,60 @@
     syncProfile(hubName());
     if (G.ability) G.ability.key = key;
     renderAbilityPick();
+    renderEntranceSummary();
     return true;
+  }
+
+  // Правая колонка окна стража. Это единственное место, где сходятся
+  // выбранные настройки, банк и предупреждения; её не нужно искать
+  // прокруткой.
+  const ENTRANCE_DIFF_NOTES = {
+    easy: "Вопросы на ступень ниже, враги слабее. Без def и поиска ошибок.",
+    normal: "Вопросы и задачи по Python, обычные враги. «Найди ошибку» и иногда def.",
+    hard: "Больше кода и функций, враги в 1,5 раза сильнее, вопросы на ступень выше."
+  };
+
+  function renderEntranceSummary() {
+    const tr = typeof window.tr === "function" ? window.tr : (text) => text;
+    const diffKey = DIFFICULTY[G.difficulty] ? G.difficulty : "normal";
+    const diff = DIFFICULTY[diffKey];
+    const mode = G.mode === "endless" ? "Бесконечное подземелье" : "Обычный спуск";
+    const omen = currentOmen();
+    const unlocked = abilityUnlocked();
+    const picked = chosenAbility();
+    const ability = !unlocked ? "откроется в доме мастера"
+      : (picked && ABILITIES[picked] ? ABILITIES[picked].name : "не выбрано");
+    const setText = (id, text) => {
+      const node = el(id);
+      if (node) node.textContent = text;
+    };
+    setText("summary-diff", tr(diff.name));
+    setText("summary-note", tr(ENTRANCE_DIFF_NOTES[diffKey] || ""));
+    setText("summary-mode", tr(mode));
+    setText("summary-omen", tr(omen.name));
+    setText("summary-ability", tr(ability));
+    setText("summary-rests", String(REST_PER_RUN + (villageLevel("barn") >= 2 ? 1 : 0) + omenRestBonus()));
+
+    const claim = el("claim-box");
+    const prof = accountName() ? getProfile(accountName()) : null;
+    let bank = "нет аккаунта";
+    if (prof) bank = walletEmpty(prof.wallet) ? "пусто" : walletText(prof.wallet);
+    if (claim && !claim.checked) bank = "остаётся в деревне";
+    setText("summary-bank", tr(bank));
+
+    const risks = [];
+    if (diffKey === "hard") risks.push("сложные вопросы");
+    if (G.mode === "endless") risks.push("без финала");
+    if (omen.key === "blood" || omen.key === "greed") risks.push("монстры бьют сильнее");
+    const risk = el("summary-risk");
+    if (risk) {
+      risk.textContent = risks.length ? "▲ " + risks.map(tr).join(" · ") : "";
+      risk.classList.toggle("hidden", !risks.length);
+    }
+    const currentOmenNode = el("omen-current");
+    if (currentOmenNode) currentOmenNode.textContent = tr(omen.name);
+    const currentAbilityNode = el("ability-current");
+    if (currentAbilityNode) currentAbilityNode.textContent = tr(ability);
   }
 
   function closeEntrance() {
@@ -8040,7 +9224,7 @@
     if (!prof.dungeonBest && !pausedRun()) {
       html += "<p class='lead'><b>Первый поход:</b> найди стража у входа, " +
         "спустись до шестого этажа. У затвора понадобится оберег из кузницы. " +
-        "Кузница — третья глава деревни: амбар, колодец, кузница. Поход сохранится.</p>";
+        "Кузница — третья глава деревни: амбар, верстак, кузница. Поход сохранится.</p>";
     }
     html +=
       "<p class='lead'><b>Амулеты:</b> " +
@@ -9005,6 +10189,14 @@
     G.treasures.forEach((t) => {
       if (G.discovered.has(key(t.x, t.y))) dot(t.x, t.y, "#fbbf24", 0.5);
     });
+    (G.chestKeyDrops || []).forEach((k) => {
+      if (G.discovered.has(key(k.x, k.y))) dot(k.x, k.y, "#fde68a", 0.9);
+    });
+    (G.events || []).forEach((ev) => {
+      if (G.discovered.has(key(ev.x, ev.y))) {
+        dot(ev.x, ev.y, ev.kind === "wanderer" ? "#f0c66a" : "#c084fc", 1.05);
+      }
+    });
     (G.traders || []).forEach((t) => {
       if (G.discovered.has(key(t.x, t.y))) dot(t.x, t.y, "#e9d5ff", 0.66);
     });
@@ -9521,7 +10713,25 @@
 
     G.treasures.forEach((t) => {
       const vis = G.visible.has(key(t.x, t.y));
-      place("treasure-" + t.uid, t.x, t.y, vis, "treasure", "ent-treasure", null, "Сундук", 2);
+      place("treasure-" + t.uid, t.x, t.y, vis, "treasure",
+        "ent-treasure" + (t.locked ? " locked" : ""), null,
+        t.locked ? "Запертый сундук" : "Сундук", 2);
+    });
+
+    (G.chestKeyDrops || []).forEach((k) => {
+      const vis = G.visible.has(key(k.x, k.y));
+      place("key-" + k.uid, k.x, k.y, vis, "key", "ent-key", null,
+        "Ключ от сундука", 3);
+    });
+
+    (G.events || []).forEach((ev) => {
+      const vis = G.visible.has(key(ev.x, ev.y));
+      const wander = ev.kind === "wanderer";
+      place("event-" + ev.uid, ev.x, ev.y, vis,
+        wander ? "npc_mentor" : "altar",
+        "ent-event " + (wander ? "ent-wanderer" : "ent-gamble"),
+        wander ? "#f0c66a" : "#c084fc",
+        wander ? "Странник" : "Древний жребий", 4);
     });
 
     (G.tributes || []).forEach((t) => {
@@ -9551,11 +10761,12 @@
       place("npc-" + n.uid, n.x, n.y, vis, sprite, cls, null, n.name, 4);
     });
 
-    // Двор деревни: деревья, забор, колодец и костёр. У колодца — та же
+    // Двор деревни: деревья, забор, верстак и костёр. У верстака — та же
     // метка «!», что и у дверей: он тоже постройка, которую можно поднять.
     (G.scenery || []).forEach((o) => {
       const vis = G.visible.has(key(o.x, o.y));
-      const ready = o.kind === "well" && buildReadyFor("well");
+      const ready = (o.kind === "workbench" || o.kind === "well") &&
+        buildReadyFor("well");
       place("prop-" + o.x + "-" + o.y, o.x, o.y, vis, PROP_ICONS[o.kind] || o.kind,
         "ent-prop ent-prop-" + o.kind + (ready ? " build-ready" : ""), null,
         PROP_NAMES[o.kind] || "", 2);
@@ -9784,6 +10995,7 @@
       set("hud-dmg", hs.dmg);
       set("hud-def", hs.def);
       set("hud-place", hs.place);
+      set("minimap-place", hs.place);
       set("hud-story-kicker", story.kicker);
       set("hud-story-title", story.title);
       const hudHp = el("hud-hp");
@@ -10731,6 +11943,26 @@
     return true;
   }
 
+  // Ключ от сундука лежит на полу и подбирается шагом, как мешочек с добычей.
+  function chestKeyAt(x, y) {
+    return (G.chestKeyDrops || []).find((k) => k.x === x && k.y === y) || null;
+  }
+
+  function pickupChestKey(keyDrop) {
+    if (!keyDrop) return false;
+    const idx = (G.chestKeyDrops || []).indexOf(keyDrop);
+    if (idx < 0) return false;
+    G.chestKeyDrops.splice(idx, 1);
+    G.lockpicks = (G.lockpicks || 0) + 1;
+    log("Найден ключ от сундука. Всего ключей: " + G.lockpicks + ".", "loot");
+    toast("Ключ от сундука: +1", 2600);
+    updateHud();
+    renderInventory();
+    updateActionButton();
+    scheduleSave();
+    return true;
+  }
+
   // Дань дракону: золото сейчас, но дракон запоминает вора. Счётчик
   // хранится в stats и переживает сохранение; в третьей фазе он усиливает
   // дракона. Первая куча — с отдельным предупреждением.
@@ -10878,8 +12110,9 @@
   function openInventory() {
     if (!G.running) return;
     renderInventory();
-    const box = el("inventory-card");
-    if (box && box.scrollIntoView) box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    // Сумка живёт в выезжающей панели, а не в постоянном сайдбаре:
+    // клавиша I должна именно открывать её, а не молча перерисовывать.
+    openGamePanel("inventory");
   }
 
   function isUsableNow(item) {
@@ -10898,11 +12131,14 @@
     const key = itemSetKey(item);
     if (!key) return "";
     const def = setByKey(key);
+    const tr = typeof window.tr === "function" ? window.tr : (text) => text;
     const n = setCounts()[key] || 0;
-    const now = n >= 3 ? "набор собран" : "надето " + n + "/3";
-    const next = n >= 2 ? def.threeText : def.twoText;
+    const now = n >= 3 ? tr("набор собран") : tr("надето") + " " + n + "/3";
+    const next = n >= 3 ? ""
+      : (n >= 2 ? " · " + tr("3 вещи:") + " " + tr(def.threeText)
+        : " · " + tr("2 вещи:") + " " + tr(def.twoText));
     return "<span class='item-set' style='color:" + def.color + "'>" + def.icon + " " +
-      def.name + " · " + now + " · с набором: " + next + "</span>";
+      tr(def.name) + " · " + now + next + "</span>";
   }
 
   // Разница с надетым предметом того же слота. Игрок не должен держать
@@ -10984,35 +12220,213 @@
     node.innerHTML = inventoryStatsInner();
   }
 
+  // ---------- Сумка: «Сундук» ----------
+  // Три колонки: надетое и итог, сетка сумки, карточка выбранного предмета.
+  // Всё берётся из настоящих G.equipment и G.inventory, поэтому надевание,
+  // зелья и наборы работают так же, как раньше.
+  function inv2Chips(item) {
+    const tr = typeof window.tr === "function" ? window.tr : (text) => text;
+    const chips = [];
+    if (item.atk) chips.push([tr("урон"), "+" + item.atk, "atk"]);
+    if (item.def) chips.push([tr("защита"), "+" + item.def, "def"]);
+    if (item.hp) chips.push(["HP", "+" + item.hp, "hp"]);
+    if (item.brace) chips.push([tr("оборона"), "+" + Math.round(item.brace * 100) + "%", "brace"]);
+    if (item.heal) chips.push([tr("лечение"), item.heal > 999 ? tr("всё") : "+" + item.heal, "heal"]);
+    return chips.map((c) =>
+      "<span class='inv2-chip " + c[2] + "'>" + c[0] + " <b>" + c[1] + "</b></span>"
+    ).join("");
+  }
+
+  function inv2EquipCard(slot) {
+    const item = G.equipment ? G.equipment[slot] : null;
+    const rar = item ? (RARITY[item.rarity] || RARITY.common) : null;
+    const tip = item
+      ? "<b>" + SLOT_NAMES[slot] + ": " + item.name + "</b><br>" +
+        itemBonusText(item) + " · " + rar.name +
+        (item.effect ? "<br>✦ " + effectText(item) : "") +
+        "<br>Нажми, чтобы снять и вернуть в сумку."
+      : "<b>" + SLOT_NAMES[slot] + ": пусто</b><br>Вещь из сумки встанет сюда.";
+    return "<button class='inv2-gear-card" + (item ? "" : " is-empty") + "' type='button'" +
+      (item ? " data-unequip-slot='" + slot + "'" : " disabled") +
+      " data-tip=\"" + tipAttr(tip) + "\">" +
+      "<span class='inv2-gear-slot'>" + SLOT_NAMES[slot] + "</span>" +
+      "<span class='inv2-gear-main'>" +
+      (item ? itemPic(item, rar.color) : "<span class='inv2-gear-void'>—</span>") +
+      "<span class='inv2-gear-copy'><b>" + (item ? item.name : "пусто") + "</b>" +
+      "<small>" + (item ? itemBonusText(item) : "ничего не надето") + "</small></span>" +
+      "</span></button>";
+  }
+
+  function inv2SetsHtml() {
+    const tr = typeof window.tr === "function" ? window.tr : (text) => text;
+    const counted = setCounts();
+    const keys = Object.keys(counted);
+    if (!keys.length) return "";
+    let html = "<div class='inv2-sets'><div class='inv2-label'>" + tr("Комплекты") + "</div>";
+    keys.forEach((key) => {
+      const def = setByKey(key);
+      const n = counted[key];
+      const bonus = setBonusFor(key, n);
+      const state = n >= 3 ? tr("Полный набор") + ": " + tr(def.threeText)
+        : n === 2 ? tr("Работает") + ": " + tr(def.twoText) + ". " +
+          tr("До полного набора ещё одна вещь.")
+        : tr("Пока ничего не даёт. Надень вторую вещь семьи.");
+      html += "<div class='inv2-set' style='border-left-color:" + def.color + "'>" +
+        "<span class='inv2-set-name'>" + def.icon + " " + tr(def.name) +
+        " <b>" + n + "/3</b></span>" +
+        "<span class='inv2-set-state'>" +
+        tr(bonus ? "Бонус набора активен" : "Бонус набора не активен") + "</span>" +
+        "<small>" + state + "</small></div>";
+    });
+    return html + "</div>";
+  }
+
+  function inv2ItemWord(n) {
+    const tail = n % 100;
+    const last = n % 10;
+    if (last === 1 && tail !== 11) return "предмет";
+    if (last >= 2 && last <= 4 && (tail < 10 || tail >= 20)) return "предмета";
+    return "предметов";
+  }
+
+  function inv2Tile(stack) {    const item = stack.item;
+    const rar = RARITY[item.rarity] || RARITY.common;
+    return "<button class='inv2-tile" +
+      (G.invSelectedId === item.id ? " is-active" : "") +
+      "' type='button' data-inv-select='" + item.id +
+      "' style='border-color:" + rar.color + "'>" +
+      "<span class='inv2-tile-ico'>" + itemPic(item, rar.color) + "</span>" +
+      "<span class='inv2-tile-name'>" + item.name + "</span>" +
+      (stack.count > 1 ? "<span class='inv-count'>×" + stack.count + "</span>" : "") +
+      "</button>";
+  }
+
+  function inv2Detail(stack) {
+    if (!stack) {
+      return "<div class='inv2-detail-empty'>Выбери предмет в сумке — здесь " +
+        "появятся его характеристики, эффект и сравнение с надетым.</div>";
+    }
+    const item = stack.item;
+    const rar = RARITY[item.rarity] || RARITY.common;
+    const isPotion = item.slot === "potion";
+    const isHint = isPotion && item.effect && item.effect.kind === "hint";
+    const effect = item.effect ? effectText(item) : "";
+    const setInfo = setLineFor(item);
+    const compare = isPotion ? "" : itemCompareText(item);
+    let potionNote = "";
+    if (isPotion) {
+      if (isHint) {
+        potionNote = "Свиток используется кнопкой «Подсказка» в бою.";
+      } else {
+        const out = potionOutcome(item);
+        if (out.useful) {
+          potionNote = "Сейчас: +" + out.heal + " HP" + (out.cleanse ? ", снимает яд" : "");
+        } else {
+          potionNote = G.player.hp >= G.player.maxHp && !(G.player.poison > 0)
+            ? "Здоровье полное — зелье подождёт."
+            : "Сейчас зелье бесполезно.";
+        }
+      }
+    }
+    return "<div class='inv2-detail-card'>" +
+      "<div class='inv2-detail-art'>" + itemPic(item, rar.color) + "</div>" +
+      "<h4>" + item.name +
+      (stack.count > 1 ? " <span class='inv-count'>×" + stack.count + "</span>" : "") +
+      "</h4>" +
+      "<div class='inv2-rarity' style='color:" + rar.color + "'>" + rar.name + "</div>" +
+      "<div class='inv2-detail-type'>" + SLOT_NAMES[item.slot] +
+      (item.set ? " · набор" : "") + "</div>" +
+      "<div class='inv2-chips'>" + inv2Chips(item) + "</div>" +
+      (effect ? "<p class='inv2-effect'>✦ " + effect + "</p>" : "") +
+      (potionNote ? "<p class='inv2-potion-note'>" + potionNote + "</p>" : "") +
+      (setInfo ? "<div class='inv2-set-line'>" + setInfo + "</div>" : "") +
+      compare +
+      (item.desc ? "<p class='inv2-desc'>" + item.desc + "</p>" : "") +
+      "<div class='inv2-detail-actions'>" +
+      "<button class='inv2-btn primary' type='button' data-inv-act='" +
+      (isPotion ? "use" : "equip") + "' data-inv-index='" + stack.index + "'>" +
+      (isPotion ? (isHint ? "В бой" : "Выпить") : "Надеть") + "</button>" +
+      "<button class='inv2-btn ghost' type='button' data-inv-discard='" + stack.index +
+      "'>Убрать</button></div></div>";
+  }
+
+  function invIsMobile() {
+    return typeof window !== "undefined" && typeof window.matchMedia === "function" &&
+      window.matchMedia("(max-width: 720px)").matches;
+  }
+
+  function invSheetNode() {
+    if (typeof document === "undefined" || !document.body) return null;
+    let node = document.getElementById("inv-sheet");
+    if (!node) {
+      node = document.createElement("div");
+      node.id = "inv-sheet";
+      node.className = "inv-sheet";
+      document.body.appendChild(node);
+    }
+    return node;
+  }
+
+  function closeInvSheet() {
+    G.invSheetOpen = false;
+    const node = typeof document !== "undefined"
+      ? document.getElementById("inv-sheet") : null;
+    if (!node) return;
+    node.classList.remove("is-open");
+    node.innerHTML = "";
+    if (typeof document !== "undefined" && document.body &&
+        document.body.classList) {
+      document.body.classList.remove("inv-sheet-open");
+    }
+  }
+
+  function bindInvSheet(sheet) {
+    const close = () => closeInvSheet();
+    sheet.querySelectorAll("[data-inv-sheet-close]").forEach((node) => {
+      node.addEventListener("click", close);
+    });
+    sheet.querySelectorAll("[data-inv-act]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.dataset.invIndex);
+        close();
+        if (btn.dataset.invAct === "use") usePotion(i);
+        else equipItem(i);
+      });
+    });
+    sheet.querySelectorAll("[data-inv-discard]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.dataset.invDiscard);
+        close();
+        discardItem(i);
+      });
+    });
+  }
+
+  function renderInvSheet(selected) {
+    if (!selected) { closeInvSheet(); return; }
+    const sheet = invSheetNode();
+    if (!sheet) return;
+    sheet.innerHTML =
+      "<div class='inv-sheet-back' data-inv-sheet-close></div>" +
+      "<div class='inv-sheet-box' role='dialog' aria-modal='true' aria-label='Предмет'>" +
+      "<button class='inv-sheet-close' type='button' data-inv-sheet-close " +
+      "aria-label='Закрыть'>×</button>" +
+      "<div class='inv2-detail inv-sheet-detail'>" + inv2Detail(selected) + "</div>" +
+      "</div>";
+    sheet.classList.add("is-open");
+    if (typeof document !== "undefined" && document.body &&
+        document.body.classList) {
+      document.body.classList.add("inv-sheet-open");
+    }
+    bindInvSheet(sheet);
+  }
+
   function renderInventory() {
     const p = G.player;
     const box = el("inventory-box");
     if (!box || !p) return;
-    let html = "";
-    html += "<div class='inv-section'><h3>Характеристики</h3>" +
-      "<div class='inv-stats' id='inv-stats'>" + inventoryStatsInner() + "</div></div>";
-    G.invStatsSig = inventoryStatsSig();
-
-    // Комплекты: видно, что уже работает и одной вещи до чего не хватает.
-    const setCounted = setCounts();
-    const setKeys = Object.keys(setCounted);
-    if (setKeys.length) {
-      html += "<div class='inv-section'><h3>Комплекты</h3>";
-      setKeys.forEach((key) => {
-        const def = setByKey(key);
-        const n = setCounted[key];
-        const bonus = setBonusFor(key, n);
-        const state = n >= 3 ? "Полный набор: " + def.threeText
-          : n === 2 ? "Работает: " + def.twoText + ". До полного набора ещё одна вещь."
-          : "Пока ничего не даёт. Надень вторую вещь семьи.";
-        html += "<div class='inv-item set-item' style='border-left-color:" + def.color + "'>" +
-          "<div class='info'><b>" + def.icon + " " + def.name + " " + n + "/3</b>" +
-          "<span>" + (bonus ? "Бонус набора активен" : "Бонус набора не активен") + "</span>" +
-          "<span class='item-desc'>" + state + "</span></div></div>";
-      });
-      html += "</div>";
-    }
-
+    const mobile = invIsMobile();
+    if (!mobile && G.invSheetOpen) closeInvSheet();
     const filter = ["all", "gear", "potion"].indexOf(G.inventoryFilter) >= 0
       ? G.inventoryFilter : "all";
     const stacks = stackedInventory();
@@ -11025,82 +12439,94 @@
       if (filter === "all") return true;
       return filter === "potion" ? s.item.slot === "potion" : s.item.slot !== "potion";
     });
-    html += "<div class='inv-section inv-bag'><div class='inv-head'><h3>Сумка</h3>" +
+    const selected = shown.filter((s) => s.item.id === G.invSelectedId)[0] ||
+      shown[0] || null;
+    G.invSelectedId = selected ? selected.item.id : "";
+    const totalCount = countOf("all");
+    const empty = filter === "gear" ? "Снаряжения в сумке нет."
+      : filter === "potion" ? "Зелий в сумке нет."
+      : "Пока пусто. Ищи сундуки и побеждай монстров.";
+
+    let html = "<div class='inv2'>";
+    html += "<aside class='inv2-gear'>" +
+      "<div class='inv2-wallet'><span>В кошельке</span><b>" + p.gold +
+      " <i>зол.</i></b><span class='inv2-wallet-keys'>Ключи сундуков <b>" +
+      (G.lockpicks || 0) + "</b></span></div>" +
+      "<div class='inv2-label'>Снаряжение</div>" +
+      ["weapon", "shield", "armor", "accessory"].map(inv2EquipCard).join("") +
+      "<div class='inv2-total'><div class='inv2-label'>Итого</div>" +
+      "<div class='inv-stats' id='inv-stats'>" + inventoryStatsInner() + "</div></div>" +
+      inv2SetsHtml() +
+      "</aside>";
+
+    html += "<section class='inv2-bag'><div class='inv2-bag-head'>" +
+      "<div class='inv2-bag-title'><span>Сумка</span><small>" +
+      totalCount + " " + inv2ItemWord(totalCount) + "</small></div>" +
       "<div class='inv-tabs' role='tablist' aria-label='Фильтр сумки'>" +
       "<button class='inv-tab" + (filter === "all" ? " is-active" : "") +
       "' type='button' role='tab' data-inv-filter='all'>Всё " + countOf("all") + "</button>" +
       "<button class='inv-tab" + (filter === "gear" ? " is-active" : "") +
-      "' type='button' role='tab' data-inv-filter='gear'>Снаряжение " + countOf("gear") + "</button>" +
+      "' type='button' role='tab' data-inv-filter='gear'>Снаряжение " +
+      countOf("gear") + "</button>" +
       "<button class='inv-tab" + (filter === "potion" ? " is-active" : "") +
-      "' type='button' role='tab' data-inv-filter='potion'>Зелья " + countOf("potion") + "</button>" +
-      "</div></div>";
+      "' type='button' role='tab' data-inv-filter='potion'>Зелья " +
+      countOf("potion") + "</button></div>" +
+      "<p class='inv2-touch-hint'>Нажми на предмет — откроются статы и действия.</p>" +
+      "</div>";
     if (shown.length === 0) {
-      const empty = filter === "gear" ? "Снаряжения в сумке нет."
-        : filter === "potion" ? "Зелий в сумке нет."
-        : "Пока пусто. Ищи сундуки и побеждай монстров.";
-      html += "<div class='inv-empty'>" + empty + "</div>";
+      html += "<div class='inv2-empty'>" + empty + "</div>";
     } else {
-      shown.forEach((stack) => {
-        const item = stack.item;
-        const i = stack.index;
-        const count = stack.count;
-        const isPotion = item.slot === "potion";
-        const isHint = isPotion && item.effect && item.effect.kind === "hint";
-        const rarity = RARITY[item.rarity];
-        const ico = itemPic(item, rarity.color);
-        // Подробности уходят во всплывашку: в узкой колонке они растягивали
-        // строку на пол-экрана, а нужны раз в пять предметов.
-        const details = [];
-        if (item.effect) details.push("✦ " + effectText(item));
-        const setInfo = setLineFor(item);
-        if (setInfo) details.push(setInfo);
-        if (item.desc) details.push(item.desc);
-        const cmp = isPotion ? "" : itemComparePlain(item);
-        if (cmp) details.push("С надетым: " + cmp);
-        const warn = (isPotion && G.player.poison > 0) ? isUsableNow(item) : "";
-        if (warn) details.push(warn);
-        const tip = "<b>" + item.name + "</b>" +
-          (details.length ? "<br>" + details.join("<br>") : "");
-        // Сравнение с надетым остаётся в строке настоящей разметкой
-        // (itemCompareText): по ней и проверки сверяют, и игрок сразу видит
-        // «▲ +2 урон» или «не лучше надетого», не наводя мышь.
-        const cmpLine = isPotion ? "" : itemCompareText(item);
-        html += "<div class='inv-item' data-tip=\"" + tipAttr(tip) +
-          "\" style='border-left-color:" + rarity.color + "'>" +
-          "<div class='info'><b>" + ico + item.name +
-          (count > 1 ? " <span class='inv-count'>×" + count + "</span>" : "") + "</b>" +
-          "<span>" + rarity.name + " · " + itemBonusText(item) + "</span>" +
-          cmpLine + "</div>" +
-          "<div class='inv-actions'>" +
-          "<button class='btn " + (isPotion ? "purple" : "") + "' data-item='" + i + "' data-tip=\"" +
-          tipAttr(isHint ? "Свиток подсказки: используй кнопку «Подсказка» в бою."
-            : isPotion ? "Выпить: " + (effectText(item) || item.desc || "лечение") + "."
-            : "Надеть вместо того, что в этом слоте.") + "\">" +
-          (isHint ? "В бой" : isPotion ? "Выпить" : "Надеть") + "</button>" +
-          "<button class='btn ghost' data-discard='" + i +
-          "' data-tip=\"Убрать предмет из сумки насовсем.\">Убрать</button>" +
-          "</div></div>";
-      });
+      const slots = filter === "all" ? Math.max(0, 9 - shown.length) : 0;
+      html += "<div class='inv2-grid'>" + shown.map(inv2Tile).join("") +
+        Array.from({ length: slots }, () =>
+          "<span class='inv2-tile is-empty' aria-hidden='true'></span>").join("") +
+        "</div>";
     }
+    html += "</section>";
+
+    html += "<aside class='inv2-detail inv2-inline-detail'>" +
+      inv2Detail(selected) + "</aside>";
     html += "</div>";
 
+    const oldGrid = box.querySelector ? box.querySelector(".inv2-grid") : null;
+    const keepScroll = oldGrid ? oldGrid.scrollTop : 0;
     box.innerHTML = html;
+    G.invStatsSig = inventoryStatsSig();
+    const newGrid = box.querySelector ? box.querySelector(".inv2-grid") : null;
+    if (newGrid && keepScroll) newGrid.scrollTop = keepScroll;
+
     box.querySelectorAll("[data-inv-filter]").forEach((btn) => {
       btn.addEventListener("click", () => {
         G.inventoryFilter = btn.dataset.invFilter || "all";
+        G.invSheetOpen = false;
         renderInventory();
       });
     });
-    box.querySelectorAll("button[data-item]").forEach((btn) => {
+    box.querySelectorAll("[data-inv-select]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const i = Number(btn.dataset.item);
-        if (G.inventory[i] && G.inventory[i].slot === "potion") usePotion(i);
+        G.invSelectedId = btn.dataset.invSelect || "";
+        // На телефоне плитка открывает карточку снизу: длинная страница
+        // с подробностями под сеткой больше не нужна.
+        if (mobile) G.invSheetOpen = true;
+        renderInventory();
+      });
+    });
+    box.querySelectorAll("[data-inv-act]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.dataset.invIndex);
+        if (btn.dataset.invAct === "use") usePotion(i);
         else equipItem(i);
       });
     });
-    box.querySelectorAll("button[data-discard]").forEach((btn) => {
-      btn.addEventListener("click", () => discardItem(Number(btn.dataset.discard)));
+    box.querySelectorAll("[data-inv-discard]").forEach((btn) => {
+      btn.addEventListener("click", () => discardItem(Number(btn.dataset.invDiscard)));
     });
+    box.querySelectorAll("[data-unequip-slot]").forEach((btn) => {
+      btn.addEventListener("click", () => unequipItem(btn.dataset.unequipSlot));
+    });
+
+    if (mobile && G.invSheetOpen && selected) renderInvSheet(selected);
+    else closeInvSheet();
   }
 
   function discardItem(index) {
@@ -11116,6 +12542,7 @@
       const current = G.inventory[index];
       if (!current) return;
       G.inventory.splice(index, 1);
+      if (G.invSelectedId === current.id) G.invSelectedId = "";
       log("Убран предмет: " + current.name + ".", "loot");
       updateHud();
       renderInventory();
@@ -11127,6 +12554,8 @@
     if (!item) return;
     G.equipment[slot] = null;
     G.inventory.push(item);
+    // Снятая вещь сразу открывается в карточке — видно, что вернулось в сумку.
+    G.invSelectedId = item.id;
     recalcStats();
     log("Снято: " + item.name + ".", "loot");
     updateHud();
@@ -11147,10 +12576,9 @@
     if (!G.running || G.battle || G.loading) return;
     // Палец/мышь только что перетаскивали камеру: это не клик по клетке.
     if (performance.now() < (G.camera.suppressClickUntil || 0)) return;
-    if (!el("end-overlay").classList.contains("hidden")) return;
-    if (!el("shop-overlay").classList.contains("hidden")) return;
-    if (!el("entrance-overlay").classList.contains("hidden")) return;
-    if (!el("dialog-overlay").classList.contains("hidden")) return;
+    // Один список модальных окон на весь ввод: сундук и встреча тоже
+    // останавливают клик по карте, иначе герой уходил под открытым окном.
+    if (overlayOpen()) return;
     stopHeldMove();
     const tile = ev.target && ev.target.closest ? ev.target.closest(".tile") : null;
     if (!tile || tile.dataset.x === undefined) return;
@@ -11252,7 +12680,7 @@
         const ny = cy + d[1];
         if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
         if (grid[ny][nx] !== 1) continue;
-        // Деревья, заборы и колодец в деревне не пропускают — иначе герой
+        // Деревья, заборы и верстак в деревне не пропускают — иначе герой
         // прошёл бы сквозь ствол, потому что в grid это обычный пол.
         if (cellBlocked(nx, ny)) continue;
         // Монстры обходят закрытые двери, как стены: иначе путь ведёт
@@ -11405,8 +12833,10 @@
           obj: descent
         };
       }
-      // Колодец — дворовая постройка: он не дом, но его тоже восстанавливают.
-      const yard = (G.scenery || []).find((s) => s.x === x && s.y === y && s.kind === "well");
+      // Верстак — дворовая постройка: он не дом, но его тоже восстанавливают.
+      // Ключ well остался от старого колодца ради совместимости сохранений.
+      const yard = (G.scenery || []).find((s) =>
+        s.x === x && s.y === y && (s.kind === "workbench" || s.kind === "well"));
       if (yard && G.place !== "dungeon") {
         const bkey = "well";
         const def = VILLAGE_BUILDINGS[bkey];
@@ -11434,8 +12864,28 @@
       }
       const trader = (G.traders || []).find((t) => t.x === x && t.y === y);
       if (trader) return { kind: "trader", label: "Торговать", icon: "⚖", obj: trader };
+      const event = (G.events || []).find((e) => e.x === x && e.y === y);
+      if (event) {
+        return {
+          kind: "event",
+          label: event.kind === "wanderer" ? "Поговорить со странником" : "Бросить древний жребий",
+          icon: "?",
+          obj: event
+        };
+      }
       const chest = (G.treasures || []).find((t) => t.x === x && t.y === y);
-      if (chest) return { kind: "chest", label: "Открыть сундук", icon: "▣", obj: chest };
+      if (chest) {
+        const hasKey = (G.lockpicks || 0) > 0;
+        return {
+          kind: "chest",
+          label: chest.locked
+            ? (hasKey ? "Открыть запертый сундук" : "Заперт: нужен ключ")
+            : "Открыть сундук",
+          icon: "▣",
+          locked: !!chest.locked && !hasKey,
+          obj: chest
+        };
+      }
       return null;
     };
     const here = at(G.playerPos.x, G.playerPos.y);
@@ -11469,7 +12919,8 @@
     btn.classList.remove("hidden");
     btn.classList.toggle("locked",
       target.kind === "locked" || target.kind === "sealed" ||
-      target.kind === "chained" || target.kind === "locked-door");
+      target.kind === "chained" || target.kind === "locked-door" ||
+      !!target.locked);
     el("action-icon").textContent = target.icon;
     el("action-label").textContent = target.label;
   }
@@ -11491,8 +12942,11 @@
     }
     if (G.schoolOpen) return true;
     if (G.talkState) return true;
+    // Карточка предмета на телефоне перекрывает карту и панель: пока она
+    // открыта, шаг и действие не должны срабатывать под ней.
+    if (G.invSheetOpen) return true;
     return ["end-overlay", "shop-overlay", "battle-overlay", "forge-overlay",
-      "level-loading", "entrance-overlay", "calibration-overlay", "dialog-overlay"].some((id) => {
+      "chest-overlay", "event-overlay", "level-loading", "entrance-overlay", "calibration-overlay", "dialog-overlay"].some((id) => {
       const node = el(id);
       return node && !node.classList.contains("hidden");
     });
@@ -11629,16 +13083,87 @@
       openShop(true);
       return;
     }
+    if (target.kind === "event") {
+      openEvent(target.obj);
+      return;
+    }
     if (target.kind === "chest") {
-      const idx = G.treasures.indexOf(target.obj);
-      if (idx < 0) return;
-      const chest = G.treasures.splice(idx, 1)[0];
+      const targetChest = target.obj;
+      // Уже открытый сундук с выбором помнит свои три вещи. Повторное
+      // открытие после перезагрузки не бросает новый жребий и не бьёт
+      // ловушкой второй раз — игрок просто возвращается к выбору.
+      if (targetChest.choiceOptions && targetChest.choiceOptions.length) {
+        openChestWindow({
+          options: targetChest.choiceOptions, chest: targetChest, pending: true,
+          keySpent: !!targetChest.choiceKeySpent, amulet: false, gold: 0,
+          material: null, trap: targetChest.choiceTrap || 0
+        });
+        render();
+        return;
+      }
+      // Замок открывается ключом из похода. Без ключа сундук остаётся на
+      // карте: его можно найти позже, а не потерять.
+      let keySpent = false;
+      if (targetChest.locked) {
+        if (!(G.lockpicks > 0)) {
+          const noKey = "Сундук заперт. Найди ключ на этаже.";
+          setMsg(noKey);
+          toast(noKey, 3200);
+          return;
+        }
+        G.lockpicks -= 1;
+        targetChest.locked = false;
+        keySpent = true;
+        log("Ключ от сундука открыл замок. Осталось ключей: " + G.lockpicks + ".", "loot");
+        updateHud();
+        renderInventory();
+      }
       // Редко в сундуке вместо предмета лежит амулет возврата: он уходит в
       // деревню и переживает смерть, поэтому им нельзя «затариться» в походе.
-      if (!findAmulet()) {
-        addItem(chest.item);
-        log("Ты открыл сундук: " + chest.item.name + ".", "loot");
-        toast("Найдено: " + chest.item.name);
+      const amulet = findAmulet({ quiet: true });
+      // Ловушка бьёт сразу, но никогда не убивает: сундук — находка, а не
+      // наказание за жадность. Урон виден в окне.
+      let trap = 0;
+      if (Math.random() < CHEST_TRAP_CHANCE && G.player.hp > 1) {
+        trap = Math.min(G.player.hp - 1, chestTrapDamage(G.floorIndex));
+        if (trap > 0) {
+          G.player.hp -= trap;
+          updateHud();
+          log("Ловушка в сундуке: −" + trap + " HP.", "loot");
+        }
+      }
+      // Сундук с выбором: три вещи, одну забирают. Сундук и награды не
+      // трогаем до выбора — если игрок закроет вкладку, всё останется на
+      // месте, а не пропадёт вместе с окном.
+      let options = null;
+      if (!amulet && Math.random() < CHEST_CHOICE_CHANCE) {
+        options = chestChoiceItems(G.floorIndex);
+        if (options.length < 2) options = null;
+      }
+      if (options) {
+        // Запоминаем жребий на самом сундуке: сохранение и повторное
+        // открытие должны вернуть те же три вещи и ту же ловушку.
+        targetChest.choiceOptions = options;
+        targetChest.choiceTrap = trap;
+        targetChest.choiceKeySpent = keySpent;
+        openChestWindow({
+          options: options, chest: targetChest, pending: true, keySpent: keySpent,
+          amulet: false, gold: 0, material: null, trap: trap
+        });
+        render();
+        scheduleSave();
+        if (G.tutorial && G.tutorial.active) tutorialEvent("chest");
+        return;
+      }
+
+      const idx = G.treasures.indexOf(targetChest);
+      if (idx < 0) return;
+      const chest = G.treasures.splice(idx, 1)[0];
+      let item = null;
+      if (!amulet) {
+        item = chest.item;
+        addItem(item);
+        log("Ты открыл сундук: " + item.name + ".", "loot");
       } else {
         log("Ты открыл сундук: в нём лежал амулет возврата.", "loot");
       }
@@ -11647,10 +13172,427 @@
       // мелких, обломки с пятого. Так второй уровень кузницы нельзя
       // получить, не спускаясь глубоко.
       const mat = rollChestLoot(G.floorIndex);
-      if (mat) gainLoot(mat.kind, mat.n);
+      let material = null;
+      if (mat) {
+        const got = gainLoot(mat.kind, mat.n);
+        if (got > 0) material = { kind: mat.kind, n: got };
+      }
+      // Немного золота: сундук должен ощущаться находкой, а не только
+      // источником материалов для деревни.
+      const goldBefore = G.player.gold;
+      addGold(rollChestGold(G.floorIndex));
+      const gold = G.player.gold - goldBefore;
+      openChestWindow({
+        item: item, options: null, amulet: amulet, keySpent: keySpent,
+        gold: gold, material: material, trap: trap
+      });
       render();
+      scheduleSave();
       if (G.tutorial && G.tutorial.active) tutorialEvent("chest");
     }
+  }
+
+  // Урон ловушки: процент здоровья плюс глубина. Не больше, чем оставляет
+  // героя живым, — это проверяется в doInteract.
+  function chestTrapDamage(floorIdx) {
+    const maxHp = G.player ? (G.player.maxHp || 100) : 100;
+    return Math.max(2, Math.round(maxHp * 0.06) + Math.floor((Number(floorIdx) || 0) * 0.8));
+  }
+
+  // Три разные вещи для сундука с выбором. Слоты не повторяются, чтобы
+  // выбор был между оружием, бронёй и амулетом, а не тремя мечами.
+  function chestChoiceItems(floorIdx) {
+    const slots = ["weapon", "shield", "armor", "accessory"];
+    const used = {};
+    const out = [];
+    for (let tries = 0; tries < 24 && out.length < 3; tries += 1) {
+      const slot = slots[Math.floor(Math.random() * slots.length)];
+      if (used[slot]) continue;
+      const item = randomItemForFloor(floorIdx, slot);
+      if (!item) continue;
+      used[slot] = true;
+      out.push(item);
+    }
+    return out;
+  }
+
+  // Сколько золота лежит в сундуке. С глубиной растёт, но не спорит с
+  // наградой за бой: сундук — приятный бонус, а не зарплата.
+  function rollChestGold(floorIdx) {
+    const depth = Math.max(0, Number(floorIdx) || 0);
+    const base = 8 + depth * 5;
+    return base + Math.floor(Math.random() * (6 + depth * 2));
+  }
+
+  // Окно находки. Вещи уже лежат в сумке: окно показывает, что именно
+  // попалось, и даёт сразу надеть снаряжение, не открывая инвентарь.
+  let chestReward = null;
+
+  function openChestWindow(reward) {
+    chestReward = reward || {};
+    const overlay = el("chest-overlay");
+    if (!overlay) return;
+    // Подсказка обучения могла висеть поверх карты — под окном находки она
+    // перекрывала карточки, поэтому гасим её.
+    clearToast();
+    // Маршрут и зажатая клавиша останавливаются здесь, а не в следующем
+    // тике: иначе герой «доходил» до цели за спиной открытого окна.
+    endWalk();
+    stopHeldMove();
+    renderChestWindow();
+    overlay.classList.remove("hidden");
+    updateActionButton();
+  }
+
+  function chestChoiceCard(item, idx) {
+    const rar = RARITY[item.rarity] || RARITY.common;
+    return "<div class='chest-choice' data-chest-pick='" + idx +
+      "' role='button' tabindex='0' style='border-top-color:" + rar.color + "'>" +
+      "<div class='chest-choice-art'>" + itemPic(item, rar.color) + "</div>" +
+      "<div class='chest-choice-name'>" + item.name + "</div>" +
+      "<div class='chest-choice-rar' style='color:" + rar.color + "'>" +
+      rar.name + "</div>" +
+      "<div class='chest-choice-stats'>" + itemBonusText(item) + "</div>" +
+      (item.effect ? "<div class='chest-choice-effect'>✦ " + effectText(item) + "</div>" : "") +
+      setLineFor(item) +
+      itemCompareText(item) +
+      "<span class='chest-choice-take'>Выбрать</span></div>";
+  }
+
+  function renderChestWindow() {
+    const box = el("chest-box");
+    if (!box || !chestReward) return;
+    const item = chestReward.item;
+    const options = chestReward.options && chestReward.options.length
+      ? chestReward.options : null;
+    const choosing = !!options;
+    const rar = item ? (RARITY[item.rarity] || RARITY.common) : null;
+    const art = typeof mapIcon === "function" ? mapIcon("treasure") : "▣";
+    let html = "<div class='chest-open-head'>" +
+      "<div class='chest-open-art'>" + art + "</div>" +
+      "<div class='chest-open-copy'><span class='chest-open-kicker'>" +
+      (choosing ? "Выбор" : "Находка") + "</span>" +
+      "<h2>" + (choosing ? "Сундук с выбором" : "Сундук открыт") + "</h2>" +
+      "<p>Этаж " + ((G.floorIndex || 0) + 1) +
+      " · «" + chestTierName(G.floorIndex) + "»</p></div>" +
+      (choosing
+        ? "<span class='chest-choice-badge'>3 награды</span>"
+        : "<button class='exit-btn' id='chest-close' type='button' " +
+          "data-tip=\"Закрыть находку. Клавиша Escape.\">Забрать</button>") +
+      "</div>";
+    html += "<div class='chest-open-body'>";
+    if (chestReward.trap > 0) {
+      html += "<div class='chest-trap'><span>Ловушка в замке</span><b>−" +
+        chestReward.trap + " HP</b><small>Шип сработал до того, как крышка " +
+        "поднялась. Снаряжение от него не спасает.</small></div>";
+    }
+    if (chestReward.keySpent) {
+      html += "<div class='chest-key-note'><span>Замок открыт ключом</span><b>" +
+        "осталось " + (G.lockpicks || 0) + "</b></div>";
+    }
+    if (choosing) {
+      html += "<p class='chest-choice-intro'>В сундуке три вещи. Возьми одну — " +
+        "остальные исчезнут.</p><div class='chest-choices'>" +
+        options.map(chestChoiceCard).join("") + "</div>";
+    } else if (item) {
+      html += "<div class='chest-item' style='border-left-color:" + rar.color + "'>" +
+        "<div class='chest-item-art'>" + itemPic(item, rar.color) + "</div>" +
+        "<div class='chest-item-copy'><div class='chest-item-name'>" + item.name + "</div>" +
+        "<div class='chest-item-rar' style='color:" + rar.color + "'>" + rar.name +
+        " · " + itemBonusText(item) + "</div>" +
+        (item.effect ? "<p class='chest-item-effect'>✦ " + effectText(item) + "</p>" : "") +
+        setLineFor(item) + itemCompareText(item) +
+        (item.desc ? "<p class='chest-item-desc'>" + item.desc + "</p>" : "") +
+        "</div></div>";
+    } else {
+      html += "<div class='chest-item chest-amulet'>" +
+        "<div class='chest-item-art'>✦</div>" +
+        "<div class='chest-item-copy'><div class='chest-item-name'>Амулет возврата</div>" +
+        "<div class='chest-item-rar'>Редкая находка</div>" +
+        "<p class='chest-item-desc'>Амулет ушёл в деревню. Он сработает один раз " +
+        "и вернёт героя на месте гибели.</p></div></div>";
+    }
+    html += "<div class='chest-yield'>";
+    if (chestReward.gold > 0) {
+      html += "<div class='chest-yield-row'><span>Золото</span><b>+" +
+        chestReward.gold + "</b></div>";
+    }
+    if (chestReward.material) {
+      html += "<div class='chest-yield-row'><span>Материалы</span><b>" +
+        (LOOT_NAMES[chestReward.material.kind] || chestReward.material.kind) +
+        " +" + chestReward.material.n + "</b></div>";
+    }
+    html += "</div>";
+    if (!choosing && item && item.slot !== "potion") {
+      html += "<div class='chest-open-actions'>" +
+        "<button class='inv2-btn primary' id='chest-equip' type='button'>Надеть сразу</button>" +
+        "</div>";
+    }
+    html += "</div>";
+    html += "<div class='chest-open-foot'>" +
+      (choosing
+        ? "<span>Выбери одну вещь</span><span>Остальные исчезнут</span>"
+        : "<span>Всё уже в сумке</span><span>Esc — закрыть</span>") +
+      "</div>";
+    box.innerHTML = html;
+    const close = el("chest-close");
+    if (close) close.addEventListener("click", closeChest);
+    const equip = el("chest-equip");
+    if (equip) equip.addEventListener("click", () => {
+      const live = chestReward && chestReward.item;
+      if (!live) { closeChest(); return; }
+      let i = G.inventory.indexOf(live);
+      if (i < 0) i = G.inventory.findIndex((it) => it.id === live.id);
+      if (i >= 0) equipItem(i);
+      closeChest();
+    });
+    const take = (idx) => chooseChestOption(idx);
+    box.querySelectorAll("[data-chest-pick]").forEach((node) => {
+      const idx = Number(node.dataset.chestPick);
+      node.addEventListener("click", () => take(idx));
+      node.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" || ev.key === " ") {
+          ev.preventDefault();
+          take(idx);
+        }
+      });
+    });
+    updateActionButton();
+  }
+
+  // Игрок выбрал одну из трёх вещей. Только здесь сундук исчезает с карты,
+  // выдаются золото и материал и делается сохранение — до выбора всё
+  // остаётся на месте.
+  function chooseChestOption(idx) {
+    const reward = chestReward;
+    const chosen = reward && reward.options && reward.options[idx];
+    if (!chosen) return false;
+    if (reward.chest) {
+      const ci = G.treasures.indexOf(reward.chest);
+      if (ci >= 0) G.treasures.splice(ci, 1);
+      reward.chest.choiceOptions = null;
+      reward.chest.choiceTrap = 0;
+      reward.chest.choiceKeySpent = false;
+    }
+    addItem(chosen);
+    const mat = rollChestLoot(G.floorIndex);
+    let material = null;
+    if (mat) {
+      const got = gainLoot(mat.kind, mat.n);
+      if (got > 0) material = { kind: mat.kind, n: got };
+    }
+    const goldBefore = G.player.gold;
+    addGold(rollChestGold(G.floorIndex));
+    const gold = G.player.gold - goldBefore;
+    reward.item = chosen;
+    reward.options = null;
+    reward.chest = null;
+    reward.pending = false;
+    reward.gold = gold;
+    reward.material = material;
+    log("Из сундука выбран предмет: " + chosen.name + ".", "loot");
+    render();
+    scheduleSave();
+    renderChestWindow();
+    return true;
+  }
+
+  function chestTierName(floorIdx) {
+    const index = Math.max(0, Number(floorIdx) || 0);
+    if (index <= 2) return "старый сундук";
+    if (index <= 5) return "крепкий сундук";
+    if (index <= 7) return "богатый сундук";
+    return "сундук бездны";
+  }
+
+  function closeChest(force) {
+    // Пока не выбрана награда, окно не закрывается: иначе сундук исчез бы
+    // вместе со всеми тремя вещами и игрок остался бы ни с чем. Переход в
+    // деревню или перезапуск этажа закрывает окно принудительно: жребий
+    // уже сохранён на сундуке и вернётся при следующем открытии.
+    if (!force && chestReward && chestReward.options && chestReward.options.length) {
+      toast("Сначала выбери одну награду");
+      return false;
+    }
+    const overlay = el("chest-overlay");
+    if (overlay) overlay.classList.add("hidden");
+    chestReward = null;
+    updateActionButton();
+    return true;
+  }
+
+  // ---------- Случайные встречи ----------
+  // Странник даёт выбор: бесплатно подлечиться или купить случайную вещь.
+  // Древний жребий берёт здоровье и может вернуть находку, золото или ничего.
+  let eventSpot = null;
+  let eventResult = null;
+
+  function eventHealAmount() {
+    const maxHp = G.player.maxHp || 100;
+    return Math.min(maxHp - G.player.hp, Math.max(1, Math.round(maxHp * 0.3)));
+  }
+
+  function openEvent(event) {
+    if (!event) return;
+    eventSpot = event;
+    eventResult = null;
+    // Подсказка обучения не должна висеть поверх вариантов встречи.
+    clearToast();
+    endWalk();
+    stopHeldMove();
+    renderEvent();
+    el("event-overlay").classList.remove("hidden");
+  }
+
+  function closeEvent() {
+    const overlay = el("event-overlay");
+    if (overlay) overlay.classList.add("hidden");
+    eventSpot = null;
+    eventResult = null;
+    updateActionButton();
+  }
+
+  function removeEventSpot(event) {
+    const idx = (G.events || []).indexOf(event);
+    if (idx >= 0) G.events.splice(idx, 1);
+    render();
+    scheduleSave();
+  }
+
+  function chooseEvent(action) {
+    const event = eventSpot;
+    if (!event) return false;
+    if (action === "leave") {
+      closeEvent();
+      return true;
+    }
+    if (action === "heal" && event.kind === "wanderer") {
+      const amount = eventHealAmount();
+      if (amount <= 0) {
+        toast("Здоровье уже полное");
+        return false;
+      }
+      G.player.hp += amount;
+      log("Странник перевязал раны: +" + amount + " HP.", "loot");
+      toast("+" + amount + " HP");
+      removeEventSpot(event);
+      updateHud();
+      closeEvent();
+      return true;
+    }
+    if (action === "buy" && event.kind === "wanderer") {
+      if (G.player.gold < 25) {
+        toast("Не хватает золота");
+        return false;
+      }
+      const item = randomItemForFloor(G.floorIndex);
+      if (!item) return false;
+      G.player.gold -= 25;
+      addItem(item);
+      log("Странник продал «" + item.name + "» за 25 золота.", "loot");
+      toast("Куплено: " + item.name + " · −25 золота");
+      removeEventSpot(event);
+      updateHud();
+      closeEvent();
+      return true;
+    }
+    if (action === "gamble" && event.kind === "gamble") {
+      if (G.player.hp <= 20) {
+        toast("Недостаточно здоровья для жребия");
+        return false;
+      }
+      G.player.hp -= 20;
+      updateHud();
+      removeEventSpot(event);
+      const roll = Math.random();
+      let text = "";
+      if (roll < 0.6) {
+        const item = randomItemForFloor(G.floorIndex);
+        if (item) {
+          addItem(item);
+          text = "Кости выпали находкой: «" + item.name + "».";
+          toast("Находка: " + item.name);
+        } else {
+          text = "Кости пусты: предмет не выпал.";
+        }
+      } else if (roll < 0.85) {
+        const gold = 20 + (G.floorIndex || 0) * 6 + Math.floor(Math.random() * 11);
+        addGold(gold);
+        text = "Кости выпали золотом: +" + gold + ".";
+        toast("+" + gold + " золота");
+      } else {
+        text = "Кости пусты. Древний жребий забрал своё.";
+        toast("Пусто");
+      }
+      eventResult = { title: "Жребий брошен", text: text };
+      renderEvent();
+      return true;
+    }
+    return false;
+  }
+
+  function renderEvent() {
+    const box = el("event-box");
+    if (!box || !eventSpot) return;
+    const wander = eventSpot.kind === "wanderer";
+    const portrait = wander
+      ? ((typeof SPRITES !== "undefined" && SPRITES.npc_mentor) || "")
+      : ((typeof SPRITES !== "undefined" && SPRITES.ghost) || "");
+    const title = wander ? "Странник" : "Древний жребий";
+    const sub = wander
+      ? "Он греется у входа и готов поделиться тем, что нашёл."
+      : "На камне лежат две кости. Одна сторона — находка, другая — боль.";
+    let html = "<div class='event-head'>" +
+      (portrait ? "<img class='event-portrait' src='" + portrait + "' alt=''>" : "") +
+      "<div class='event-copy'><span class='event-kicker'>Встреча на этаже</span>" +
+      "<h2>" + title + "</h2><p>" + sub + "</p></div>" +
+      "<button class='exit-btn' id='event-close' type='button' " +
+      "data-tip=\"Оставить встречу на карте. Клавиша Escape.\">Уйти</button></div>";
+    html += "<div class='event-body'>";
+    if (eventResult) {
+      html += "<div class='event-result'><b>" + eventResult.title + "</b>" +
+        "<p>" + eventResult.text + "</p>" +
+        "<button class='inv2-btn primary' id='event-done' type='button'>Дальше</button></div>";
+    } else if (wander) {
+      const heal = eventHealAmount();
+      const canBuy = G.player.gold >= 25;
+      html += "<p class='event-text'>Странник кивает: «У меня есть иголка, нитки " +
+        "и одна занятная вещь. Выбирай».</p>" +
+        "<button class='event-choice" + (heal <= 0 ? " is-disabled" : "") +
+        "' type='button' data-event-choice='heal'" + (heal <= 0 ? " disabled" : "") + ">" +
+        "<b>Перевязать раны</b><span>" +
+        (heal > 0 ? "Бесплатно · +" + heal + " HP" : "Здоровье уже полное") +
+        "</span></button>" +
+        "<button class='event-choice" + (canBuy ? "" : " is-disabled") +
+        "' type='button' data-event-choice='buy'" + (canBuy ? "" : " disabled") + ">" +
+        "<b>Купить находку</b><span>" +
+        (canBuy ? "25 золота · случайная вещь этого этажа"
+          : "Нужно 25 золота, у тебя " + G.player.gold) +
+        "</span></button>";
+    } else {
+      const canRoll = G.player.hp > 20;
+      html += "<p class='event-text'>Жребий просит 20 HP. Взамен — находка, " +
+        "золото или пустота.</p>" +
+        "<button class='event-choice" + (canRoll ? "" : " is-disabled") +
+        "' type='button' data-event-choice='gamble'" + (canRoll ? "" : " disabled") + ">" +
+        "<b>Бросить кости</b><span>" +
+        (canRoll ? "20 HP · шанс на вещь или золото"
+          : "Нужно больше 20 HP") +
+        "</span></button>";
+    }
+    html += "</div>";
+    html += "<div class='event-foot'><span>Встреча на этаже</span>" +
+      "<span>Esc — уйти</span></div>";
+    box.innerHTML = html;
+    el("event-overlay").classList.remove("hidden");
+    const close = el("event-close");
+    if (close) close.addEventListener("click", () => chooseEvent("leave"));
+    const done = el("event-done");
+    if (done) done.addEventListener("click", closeEvent);
+    box.querySelectorAll("[data-event-choice]").forEach((btn) => {
+      btn.addEventListener("click", () => chooseEvent(btn.dataset.eventChoice));
+    });
+    updateActionButton();
   }
 
   // Материал из сундука: вид по глубине, количество — один-два. Возвращает
@@ -11664,7 +13606,9 @@
     // руда, и обломки стали бы редкостью даже там, где они и есть цель.
     const order = kinds.slice();
     for (let i = order.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
+      // Math.random() может вернуть ровно 1 в тестовой заглушке: не даём
+      // индексу выйти за массив.
+      const j = Math.min(i, Math.floor(Math.random() * (i + 1)));
       const t = order[i]; order[i] = order[j]; order[j] = t;
     }
     for (let i = 0; i < order.length; i += 1) {
@@ -11822,10 +13766,9 @@
   // keepPan — шаг по маршруту: камеру не дёргаем, игрок может осматривать этаж.
   function move(dx, dy, keepPan) {
     if (!G.running || G.battle) return;
-    if (!el("end-overlay").classList.contains("hidden")) return;
-    if (!el("shop-overlay").classList.contains("hidden")) return;
-    if (!el("entrance-overlay").classList.contains("hidden")) return;
-    if (!el("dialog-overlay").classList.contains("hidden")) return;
+    // Ход с клавиатуры, маршрут и автоповтор идут через эту точку, поэтому
+    // проверка модальных окон здесь одна на всех.
+    if (overlayOpen()) return;
     if (G.player.snared) {
       setMsg("Цепь держит тебя. Сорви её в бою или пережди — пропусти ход.");
       return;
@@ -11885,6 +13828,9 @@
     // Мешочек подбирается шагом: враг уже мёртв, бой не начинается.
     const bag = lootBagAt(nx, ny);
     if (bag) pickupLootBag(bag);
+    // Ключ от сундука тоже лежит на полу и подбирается шагом.
+    const chestKey = chestKeyAt(nx, ny);
+    if (chestKey) pickupChestKey(chestKey);
 
     // Сундук, торговец и лестницы ждут кнопку действия (пункт 1).
     // Само по себе срабатывание убрано: шаг больше ничего не открывает.
@@ -15995,8 +17941,8 @@ function topicName(key) {
     const next = o.victory
       ? "Дракон повержен. Можно спуститься в бездну или вернуться в деревню."
       : o.keepGold
-        ? "Амулет вернёт героя на этот этаж. Материалы и ключи уже в деревне."
-        : "Вернись в деревню: золото в банке, материалы и ключи сохранены. " +
+        ? "Амулет вернёт героя на этот этаж. Материалы и ключи от построек уже в деревне."
+        : "Вернись в деревню: золото в банке, материалы и ключи от построек сохранены. " +
           "Купи улучшение или повтори слабую тему.";
     html += "<p class='lead run-next'>" + next + "</p>";
     return html;
@@ -16005,7 +17951,7 @@ function topicName(key) {
   // Общая часть экрана смерти: до какого этажа дошёл, сколько убил и разбор тем.
   function deathStatsHtml(banked, keepGold) {
     return runSummaryHtml({ banked: banked, keepGold: !!keepGold }) +
-      "<p class='lead'>Материалы и ключи остаются в деревне: следующий поход " +
+      "<p class='lead'>Материалы и ключи от построек остаются в деревне: следующий поход " +
       "начнётся с ними.</p>" + topicReportHtml();
   }
 
@@ -16045,7 +17991,7 @@ function topicName(key) {
       "<h2 class='game-over'>Поход окончен</h2>" +
       deathStatsHtml(null, true) +
       "<p class='lead'>Снаряжение, зелья, уровни и кузница этого похода потеряны. " +
-      "Материалы и ключи остались в деревне.</p>" +
+      "Материалы и ключи от построек остались в деревне.</p>" +
       (review.length
         ? "<p class='lead'>Что забрать с собой? <b>Золото</b> — " + goldPct +
           "% походной казны. <b>Знания</b> — " + knowPct +
@@ -16113,9 +18059,9 @@ function topicName(key) {
   function tutorialSteps() {
     return [
       { id: "move", title: "Шаг по карте",
-        hint: "Иди стрелками, WASD или кликом по клетке." },
+        hint: "Иди стрелками, WASD или коснись клетки." },
       { id: "chest", title: "Сундук",
-        hint: "Подойди к сундуку и нажми E: внутри предмет или материал." },
+        hint: "Подойди к сундуку и нажми кнопку действия: внутри добыча." },
       { id: "battle", title: "Бой",
         hint: "Столкнись с монстром и ответь на вопрос: верный ответ — твой удар." },
       { id: "camp", title: "Привал",
@@ -16167,7 +18113,8 @@ function topicName(key) {
     mark(G.playerPos);
     mark(G.stairsDown);
     mark(G.stairsUp);
-    [G.treasures, G.camps, G.enemies, G.traders, G.nodes, G.levers, G.signs]
+    [G.treasures, G.camps, G.enemies, G.traders, G.nodes, G.levers, G.signs,
+      G.events, G.chestKeyDrops]
       .forEach((list) => (list || []).forEach(mark));
     return used;
   }
@@ -16399,9 +18346,10 @@ function topicName(key) {
   // числа берутся в момент показа окна, а не при загрузке страницы.
   const VILLAGE_BUILDINGS = {
     well: {
-      name: "Колодец", yard: true,
+      name: "Верстак", yard: true,
       effects: [
-        () => "+" + Math.round(VILLAGE_WELL_HP) + " здоровья в каждом походе",
+        () => "снаряжение крепче: +" + Math.round(VILLAGE_WELL_HP) +
+          " здоровья в каждом походе",
         () => "ещё +" + Math.round(VILLAGE_WELL_HP) + " здоровья (всего +" +
           Math.round(VILLAGE_WELL_HP * 2) + ")"
       ],
@@ -16426,7 +18374,7 @@ function topicName(key) {
     smith: {
       name: "Дом мастера",
       effects: [
-        () => "потолок улучшений героя — 5",
+        () => "умения похода и потолок улучшений — 5",
         () => "+1 заряд умения и −" + Math.round(VILLAGE_SMITH_DISCOUNT * 100) +
           "% к цене улучшений"
       ],
@@ -16631,7 +18579,7 @@ function topicName(key) {
   // Поля text/doneText — это сюжет для журнала, а не подсказка по механике.
   const CAMPAIGN = {
     title: "Печати глубины",
-    prologue: "Деревня стоит на четырёх опорах: амбар, колодец, кузня и дом " +
+    prologue: "Деревня стоит на четырёх опорах: амбар, верстак, кузня и дом " +
       "мастера. Под ними — старый спуск, где когда-то учили первых писцов. " +
       "Теперь там стражи, а за ними — дракон, последний хранитель двери.",
     epilogue: "Печати на месте. Деревня переживёт зиму. За последней дверью " +
@@ -16665,14 +18613,14 @@ function topicName(key) {
       reward: { gold: 60, ore: 2 }
     },
     {
-      key: "well", goal: "well", title: "Вода для деревни",
-      place: "Деревня · колодец",
-      brief: "Расчистить колодец и услышать, что говорит глубина.",
-      text: "Колодец засыпан камнем. Через него деревня слушает глубину и " +
-        "узнаёт, когда просыпаются старые замки. На расчистку нужна руда.",
-      objective: "Восстановить колодец и вернуться к старосте.",
-      doneText: "Вода пошла. В её шуме слышен чужой голос: «Не спускайся " +
-        "дальше». Староста делает вид, что не слышит.",
+      key: "well", goal: "well", title: "Верстак для деревни",
+      place: "Деревня · верстак",
+      brief: "Починить верстак и подогнать снаряжение.",
+      text: "Верстак завален хламом. На нём подгоняют доспех и чинят ремни: " +
+        "крепкое снаряжение держит удар. На починку нужна руда.",
+      objective: "Восстановить верстак и вернуться к старосте.",
+      doneText: "Верстак снова в деле. Ремни подтянуты, пластины сидят ровно — " +
+        "герой выдержит лишний удар. «Одной опорой больше», — говорит староста.",
       reward: { gold: 60, wood: 2 }
     },
     {
@@ -16759,7 +18707,7 @@ function topicName(key) {
     const s = seal || sealFor(G.floorIndex + 1);
     if (!s) return "";
     const chain = s.key === "seal"
-      ? "Сначала подними деревню: амбар, колодец, кузница. "
+      ? "Сначала подними деревню: амбар, верстак, кузница. "
       : "";
     return "Спуск запечатан: нужен " + s.what + ". Его выдают в деревне у " +
       s.from + ". " + chain +
@@ -17823,7 +19771,7 @@ function topicName(key) {
       title: "Деревня после сюжета",
       items: [
         "У казначея — «План деревни»: все четыре опоры, следующий уровень и цена в одном окне.",
-        "После дракона подсказка ведёт к доступной постройке, а двери и колодец с готовыми материалами получают метку «!».",
+        "После дракона подсказка ведёт к доступной постройке, а двери и верстак с готовыми материалами получают метку «!».",
         "Амбар работает каждый поход: материалы меняются на зелья и снаряжение, с потолком на поход.",
         "Дом мастера II удешевляет улучшения героя на 15%: потолок остаётся пятым."
       ]
@@ -18809,7 +20757,7 @@ function topicName(key) {
     clearSave();
     reset();
     log("Поход свёрнут: в банк ушло " + amount + " из " + gold +
-      " золота. Материалы и ключи остались в профиле.", "floor");
+      " золота. Материалы и ключи от построек остались в профиле.", "floor");
     toast(amount > 0
       ? "Поход свёрнут: в банк " + amount + " золота"
       : "Поход свёрнут: забирать было нечего");
@@ -18828,7 +20776,7 @@ function topicName(key) {
       title: "Свернуть поход?",
       text: "В банк уйдёт " + amount + " из " + gold + " золота (" +
         Math.round(HUB_RETREAT_SHARE * 100) + "%). Снаряжение, зелья, " +
-        "уровни и кузница этого похода пропадут. Материалы и ключи уже в деревне. " +
+        "уровни и кузница этого похода пропадут. Материалы и ключи от построек уже в деревне. " +
         "Продолжить поход можно у стража, пока он не свёрнут.",
       confirmLabel: "Свернуть поход",
       cancelLabel: "Остаться в походе",
@@ -18856,7 +20804,7 @@ function topicName(key) {
   // Редкая находка: амулет уходит в деревню, а не в сумку похода, поэтому
   // переживает смерть. Возвращает true, если находка состоялась — тогда
   // сундук отдаёт амулет вместо предмета.
-  function findAmulet() {
+  function findAmulet(opts) {
     const prof = hubProfile();
     if (!prof || !prof.hub) return false;
     if (prof.hub.revive >= amuletCap()) return false;
@@ -18865,7 +20813,7 @@ function topicName(key) {
     putProfile(hubName(), prof);
     syncProfile(hubName());
     log("Редкая находка: амулет возврата. Теперь их " + prof.hub.revive + ".", "loot");
-    toast("Редкая находка: амулет возврата!");
+    if (!opts || !opts.quiet) toast("Редкая находка: амулет возврата!");
     return true;
   }
 
@@ -18916,16 +20864,24 @@ function topicName(key) {
     }];
     const small = itemById("small_potion");
     const big = itemById("big_potion");
-    if (small) offers.push({ kind: "small_potion", name: small.name, price: 40, note: "Восстанавливает здоровье в бою." });
-    if (big) offers.push({ kind: "big_potion", name: big.name, price: 80, note: "Лечит сильнее малого." });
+    if (small) offers.push({ kind: "small_potion", name: small.name, price: 40,
+      note: "Восстанавливает здоровье в бою.", item: small });
+    if (big) offers.push({ kind: "big_potion", name: big.name, price: 80,
+      note: "Лечит сильнее малого.", item: big });
     hubGearPool().forEach((it) => {
-      offers.push({ kind: "gear:" + it.id, name: it.name, price: gearHubPrice(it), note: it.desc || "" });
+      offers.push({ kind: "gear:" + it.id, name: it.name, price: gearHubPrice(it),
+        note: it.desc || "", item: it });
     });
     return offers;
   }
 
   function hubShopCard(offer, prof) {
     const gold = (prof.wallet && prof.wallet.gold) || 0;
+    const item = offer.item || null;
+    const gear = !!item && item.slot !== "potion";
+    const owned = gear
+      ? (prof.hub.gear || []).filter((id) => id === item.id).length
+      : 0;
     let stock = "";
     if (offer.kind === "amulet") {
       stock = prof.hub.revive >= amuletCap()
@@ -18933,16 +20889,41 @@ function topicName(key) {
         : "<span class='hub-stock'>в запасе: " + prof.hub.revive + " из " + amuletCap() + "</span>";
     } else if (offer.kind === "small_potion" || offer.kind === "big_potion") {
       stock = "<span class='hub-stock'>в кошельке: " + (prof.wallet[offer.kind] || 0) + "</span>";
+    } else if (gear) {
+      stock = owned
+        ? "<span class='hub-stock full'>в дороге: " + owned + "</span>"
+        : "<span class='hub-stock'>нет в дороге</span>";
     }
-    const can = gold >= offer.price &&
-      !(offer.kind === "amulet" && prof.hub.revive >= amuletCap());
-    return "<div class='hub-card'>" +
-      "<div class='hub-card-head'><b>" + offer.name + "</b><span class='hub-price'>" + offer.price + " зол.</span></div>" +
+    const capFull = offer.kind === "amulet" && prof.hub.revive >= amuletCap();
+    const already = gear && owned > 0;
+    const poor = gold < offer.price;
+    const can = !capFull && !already && !poor;
+    let label = "Купить";
+    if (capFull) label = "Максимум";
+    else if (already) label = "Уже в дороге";
+    else if (poor) label = "Не хватает " + (offer.price - gold) + " зол.";
+    const rarity = item && typeof RARITY !== "undefined" && RARITY[item.rarity]
+      ? RARITY[item.rarity] : null;
+    const icon = item ? itemPic(item) : "<span class='trader-glyph' aria-hidden='true'>◇</span>";
+    const stats = item ? itemBonusText(item) : "";
+    const effect = item && item.effect && typeof effectText === "function"
+      ? "<p class='trader-effect'>✦ " + effectText(item) + "</p>" : "";
+    const setLine = gear ? hubSetLineFor(item, prof) : "";
+    return "<article class='hub-card trader-card" + (can ? "" : " disabled") +
+      (already ? " owned" : "") + "'>" +
+      "<div class='trader-card-head'>" +
+      "<span class='trader-card-icon'>" + icon + "</span>" +
+      "<span class='trader-card-title'><b>" + offer.name + "</b>" +
+      (rarity ? "<span class='trader-rarity' style='color:" + rarity.color + "'>" +
+        rarity.name + "</span>" : "") + "</span>" +
+      "<span class='hub-price'>" + offer.price + " зол.</span></div>" +
+      (stats ? "<p class='trader-stats'>" + stats + "</p>" : "") +
+      effect + setLine +
       "<p class='hub-card-note'>" + (offer.note || "") + "</p>" +
-      stock +
-      "<button class='btn" + (can ? "" : " ghost") + " hub-buy' type='button' data-kind=\"" +
-      offer.kind + "\"" + (can ? "" : " disabled") + ">Купить</button>" +
-      "</div>";
+      "<div class='trader-card-foot'>" + stock +
+      "<button class='btn" + (can ? "" : " ghost") + " hub-buy' type='button' data-kind='" +
+      offer.kind + "'" + (can ? "" : " disabled") + ">" + label + "</button>" +
+      "</div></article>";
   }
 
   function renderHub() {
@@ -18975,12 +20956,18 @@ function topicName(key) {
     const offer = hubShopOffers().find((o) => o.kind === kind);
     if (!offer) return;
     prof.wallet = prof.wallet || { gold: 0, small_potion: 0, big_potion: 0 };
+    prof.hub = prof.hub || { revive: 0, gear: [] };
     if (kind === "amulet" && prof.hub.revive >= amuletCap()) {
       toast("Больше " + amuletCap() + " амулетов не унести");
       return;
     }
     if ((prof.wallet.gold || 0) < offer.price) {
       toast("Не хватает золота: нужно " + offer.price);
+      return;
+    }
+    const gearId = kind.indexOf("gear:") === 0 ? kind.slice(5) : "";
+    if (gearId && prof.hub.gear.indexOf(gearId) >= 0) {
+      toast("Эта вещь уже в дороге");
       return;
     }
     prof.wallet.gold -= offer.price;
@@ -18990,8 +20977,8 @@ function topicName(key) {
     } else if (kind === "small_potion" || kind === "big_potion") {
       prof.wallet[kind] = (prof.wallet[kind] || 0) + 1;
       toast("Куплено зелье: " + offer.name);
-    } else if (kind.indexOf("gear:") === 0) {
-      const it = itemById(kind.slice(5));
+    } else if (gearId) {
+      const it = itemById(gearId);
       if (it) prof.hub.gear.push(it.id);
       toast("Куплено снаряжение: " + offer.name);
     }
@@ -18999,10 +20986,20 @@ function topicName(key) {
     syncProfile(hubName());
     renderHub();
     renderVillageInfo();
-    // Окно торговца открыто поверх карты — перерисуем его, чтобы покупка
-    // была видна сразу, а не после закрытия.
-    if (G.dialogNpc && !el("dialog-overlay").classList.contains("hidden")) openDialog(G.dialogNpc);
+    // Окно торговца открыто поверх карты — перерисовываем его, сохраняя
+    // прокрутку: иначе покупка нижней вещи возвращала список к началу.
+    refreshOpenDialog();
     updateWalletLine();
+  }
+
+  function refreshOpenDialog() {
+    if (!G.dialogNpc || el("dialog-overlay").classList.contains("hidden")) return;
+    const box = el("dialog-box");
+    const body = box ? box.querySelector(".dialog-body") : null;
+    const top = body ? body.scrollTop : 0;
+    openDialog(G.dialogNpc);
+    const next = box ? box.querySelector(".dialog-body") : null;
+    if (next) next.scrollTop = top;
   }
 
 
@@ -19012,6 +21009,8 @@ function topicName(key) {
   function restartFloor(done) {
     const index = G.floorIndex;
     endWalk();
+    closeChest(true);
+    closeEvent();
     G.battle = null;
     G.blessingOffer = null;
     G.dead = false;
@@ -19165,6 +21164,8 @@ function topicName(key) {
 
   function startRun(name) {
     closeEntrance();
+    closeChest(true);
+    closeEvent();
     // Затираем ли сохранённый поход. Если да, его партия со склада амбара
     // кончается вместе с ним; иначе счётчик обменов перешёл бы в новый.
     const abandoned = !!pausedRun();
@@ -19205,6 +21206,9 @@ function topicName(key) {
     G.equipment = { weapon: null, shield: null, armor: null, accessory: null };
     G.forge = { weapon: 0, armor: 0, vitality: 0 };
     G.inventory = [{ ...itemById("small_potion") }];
+    G.lockpicks = 0;
+    G.chestKeyDrops = [];
+    G.events = [];
     // Ключи от тайников — ресурс похода: новый поход не наследует их
     // от предыдущего.
     G.shopStock = null;
@@ -19420,6 +21424,8 @@ function topicName(key) {
 
   function reset() {
     G.running = false;
+    closeChest(true);
+    closeEvent();
     G.campaign = CAMPAIGN_V2 ? 2 : 1;
     setCampaign(G.campaign);
     // Поход закончен: следующее знамение и партия припасов со склада
@@ -19540,7 +21546,20 @@ function topicName(key) {
         x: e.x,
         y: e.y
       })),
-      treasures: st.treasures.map((t) => ({ uid: t.uid, x: t.x, y: t.y, item: t.item })),
+      treasures: st.treasures.map((t) => ({
+        uid: t.uid, x: t.x, y: t.y, item: t.item, locked: !!t.locked,
+        // Недовыбранный сундук с тремя наградами: без этих полей после
+        // перезагрузки он бросал новый жребий и мог снова ударить ловушкой.
+        choiceOptions: t.choiceOptions || null,
+        choiceTrap: t.choiceTrap || 0,
+        choiceKeySpent: !!t.choiceKeySpent
+      })),
+      chestKeyDrops: (st.chestKeyDrops || []).map((c) => ({
+        uid: c.uid, x: c.x, y: c.y
+      })),
+      events: (st.events || []).map((e) => ({
+        uid: e.uid, x: e.x, y: e.y, kind: e.kind, used: !!e.used
+      })),
       tributes: (st.tributes || []).map((t) => ({
         uid: t.uid, x: t.x, y: t.y, gold: t.gold, taken: !!t.taken
       })),
@@ -19606,6 +21625,8 @@ function topicName(key) {
         )
       ),
       treasures: (o.treasures || []).map((t) => Object.assign({}, t)),
+      chestKeyDrops: (o.chestKeyDrops || []).map((c) => Object.assign({}, c)),
+      events: (o.events || []).map((e) => Object.assign({ used: false }, e)),
       tributes: (o.tributes || []).map((t) => Object.assign({ taken: false }, t)),
       lootBags: (o.lootBags || []).map((b) => ({
         uid: b.uid, x: b.x, y: b.y, gold: b.gold || 0,
@@ -19892,6 +21913,7 @@ function topicName(key) {
         restsLeft: G.restsLeft || 0,
         traderFloor: G.traderFloor == null ? null : G.traderFloor,
         inventory: G.inventory,
+        lockpicks: G.lockpicks || 0,
         stats: G.stats,
         visited: Array.from(G.visited),
         uid: G.uid,
@@ -20025,12 +22047,17 @@ function topicName(key) {
   function updateResumeButton() {
     const btn = el("resume-btn");
     const retreat = el("retreat-btn");
+    const card = el("pause-card");
+    const or = el("entrance-or");
     if (!btn) return;
     const data = readSave();
     // «Продолжить» видит только вошедший владелец сейва: на общем
     // компьютере чужой сейв не всплывает.
     const me = accountName();
-    if (data && data.v === 1 && me && (data.name || "") === me) {
+    const visible = !!(data && data.v === 1 && me && (data.name || "") === me);
+    if (card) card.classList.toggle("hidden", !visible);
+    if (or) or.classList.toggle("hidden", !visible);
+    if (visible) {
       btn.style.display = "";
       // Мёртвый сейв не воскрешает бесплатно. Перезагрузка страницы не
       // должна обходить экран смерти: продолжить можно только за амулет,
@@ -20045,6 +22072,21 @@ function topicName(key) {
       } else {
         btn.textContent = "Продолжить: этаж " + (data.floorIndex + 1);
       }
+      const title = el("pause-title");
+      const meta = el("pause-meta");
+      if (title) {
+        title.textContent = data.over
+          ? "Поход окончен"
+          : "Этаж " + ((data.floorIndex || 0) + 1) + " · " +
+            ((data.player && data.player.gold) || 0) + " золота";
+      }
+      if (meta) {
+        const diff = DIFFICULTY[data.difficulty] || DIFFICULTY.normal;
+        const om = omenDef(data.omen || "steady");
+        const tr = typeof window.tr === "function" ? window.tr : (text) => text;
+        meta.textContent = tr(diff.name) + " · " + tr(om.name) +
+          (data.over ? " · " + tr("нужен амулет") : "");
+      }
       if (retreat) {
         retreat.style.display = data.over ? "none" : "";
         retreat.textContent = "Свернуть поход (+" + retreatGold(data) + " зол.)";
@@ -20053,6 +22095,7 @@ function topicName(key) {
       btn.style.display = "none";
       if (retreat) retreat.style.display = "none";
     }
+    renderEntranceSummary();
   }
 
   // Карточки «режим похода» и «сложность» — это группы-переключатели.
@@ -20155,6 +22198,9 @@ function topicName(key) {
     G.shopTrader = false;
     G.traderFloor = typeof data.traderFloor === "number" ? data.traderFloor : null;
     G.inventory = data.inventory || [];
+    G.lockpicks = Math.max(0, Number(data.lockpicks) || 0);
+    G.chestKeyDrops = [];
+    G.events = [];
     // Если поход был на паузе, а игрок за это время купил улучшения героя в
     // деревне, они должны примениться к текущему походу. Иначе покупка
     // выглядит работающей (уровни в панели выросли), а в бою ничего не меняет.
@@ -20281,6 +22327,9 @@ function topicName(key) {
           floorNameAt(G.floorIndex) + ".", "floor");
         setMsg("Игра восстановлена из сохранения.");
         afterFloor();
+        // Обучение — часть состояния первого спуска, а не только старта
+        // новой игры: после перезагрузки оно должно вернуться.
+        tutorialStart();
         // Если страницу обновили посреди боя, возвращаем в тот же бой.
         // Для победы врага уже нет в G.enemies — берём его копию из сейва.
         if (data.battle && data.battle.enemyUid) {
@@ -20314,6 +22363,10 @@ function topicName(key) {
     const blessOverlay = el("blessing-overlay");
     if (blessOverlay) blessOverlay.classList.add("hidden");
     endBattleMode();
+    // Окна находок не должны пережить переход: иначе сундук висел бы
+    // поверх деревни, а его жребий остался бы без выбора.
+    closeChest(true);
+    closeEvent();
     const floorLeft = G.floorIndex + 1;
     saveGame();
     enterVillage(null);
@@ -20342,6 +22395,7 @@ function topicName(key) {
   let gamePanel = null;
 
   function closeGamePanel() {
+    closeInvSheet();
     gamePanel = null;
     const dock = el("game-dock");
     if (dock) dock.classList.add("hidden");
@@ -20352,6 +22406,7 @@ function topicName(key) {
   function openGamePanel(name) {
     const dock = el("game-dock");
     if (!dock) return;
+    if (name !== "inventory") closeInvSheet();
     if (name === "journal") {
       if (!el("journal-overlay").classList.contains("hidden")) closeJournal();
       else openJournal();
@@ -20362,6 +22417,9 @@ function topicName(key) {
       return;
     }
     gamePanel = name;
+    // Кошелёк в окне инвентаря живёт отдельно от HUD: золото и ключи могли
+    // измениться, пока панель была закрыта, поэтому пересобираем её при входе.
+    if (name === "inventory") renderInventory();
     dock.classList.remove("hidden");
     document.querySelectorAll(".game-panel").forEach((panel) => {
       panel.classList.toggle("is-open", panel.dataset.panelView === name);
@@ -20468,6 +22526,10 @@ function topicName(key) {
     const calibrationBtn = el("calibration-btn");
     if (calibrationBtn) calibrationBtn.addEventListener("click", () => openCalibration(null));
     el("entrance-close").addEventListener("click", closeEntrance);
+    const closeSide = el("entrance-close-side");
+    if (closeSide) closeSide.addEventListener("click", closeEntrance);
+    const claimBox = el("claim-box");
+    if (claimBox) claimBox.addEventListener("change", renderEntranceSummary);
     // Окно калибровки перерисовывается после каждого ответа, поэтому клики
     // ловим делегированием на оверлее, а не на отдельных кнопках.
     el("calibration-overlay").addEventListener("click", (e) => {
@@ -20538,6 +22600,54 @@ function topicName(key) {
       const btn = ev.target && ev.target.closest ? ev.target.closest("#dialog-shop .hub-buy") : null;
       if (btn && !btn.disabled) buyHubItem(btn.dataset.kind);
     });
+    // Староста: вкладки «Кампания» и «Поручения» перерисовывают окно,
+    // поэтому взятие задания и сдача главы остаются на своей вкладке.
+    document.addEventListener("click", (ev) => {
+      if (!G.dialogNpc || G.dialogNpc.key !== "elder") return;
+      const t = ev.target;
+      if (!t || !t.closest) return;
+      const tab = t.closest("[data-elder-tab]");
+      if (tab) {
+        elderSetTab(tab.dataset.elderTab);
+        refreshOpenDialog();
+      }
+    });
+    // Банк-штаб: вкладки «Счёт», «Деревня», «Награды» перерисовывают окно
+    // на месте, чтобы кнопки улучшений оставались рабочими.
+    document.addEventListener("click", (ev) => {
+      if (!G.dialogNpc || G.dialogNpc.key !== "banker") return;
+      const t = ev.target;
+      if (!t || !t.closest) return;
+      const tab = t.closest("[data-bank-tab]");
+      if (tab) {
+        bankSetTab(tab.dataset.bankTab);
+        refreshOpenDialog();
+      }
+    });
+    // Витрина торговца: категории и выбор товара — это состояние окна,
+    // а не покупка. После выбора перерисовываем окно на месте.
+    document.addEventListener("click", (ev) => {
+      if (!G.dialogNpc || G.dialogNpc.key !== "trader") return;
+      const t = ev.target;
+      if (!t || !t.closest) return;
+      const sort = t.closest("[data-trader-sort]");
+      if (sort) {
+        traderSetSort(sort.dataset.traderSort);
+        refreshOpenDialog();
+        return;
+      }
+      const cat = t.closest("[data-trader-cat]");
+      if (cat) {
+        traderSetCategory(cat.dataset.traderCat);
+        refreshOpenDialog();
+        return;
+      }
+      const item = t.closest("[data-trader-select]");
+      if (item) {
+        traderView.selected = item.dataset.traderSelect;
+        refreshOpenDialog();
+      }
+    });
     // Улучшения героя и восстановление построек живут в окнах деревни: они
     // тоже перерисовываются после покупки, поэтому клики делегируем.
     document.addEventListener("click", (ev) => {
@@ -20601,6 +22711,7 @@ function topicName(key) {
       mode.classList.add("active");
       G.difficulty = mode.dataset.diff;
       syncPickState();
+      renderEntranceSummary();
     });
 
     // Режим похода: обычная кампания или бесконечный спуск.
@@ -20611,6 +22722,7 @@ function topicName(key) {
       mode.classList.add("active");
       G.mode = mode.dataset.mode === "endless" ? "endless" : "dungeon";
       syncPickState();
+      renderEntranceSummary();
     });
 
     // Клавиатура для тех же карточек: Enter/Space выбирает, стрелки ходят
@@ -20630,6 +22742,7 @@ function topicName(key) {
           if (pair[1] === "mode") G.mode = mode.dataset.mode === "endless" ? "endless" : "dungeon";
           else G.difficulty = mode.dataset.diff;
           syncPickState();
+          renderEntranceSummary();
           return;
         }
         pickArrow(box, pair[1], e);
@@ -20892,6 +23005,18 @@ function topicName(key) {
           return;
         }
       }
+      if (e.key === "Escape" && G.invSheetOpen) {
+        closeInvSheet();
+        return;
+      }
+      if (e.key === "Escape" && !el("event-overlay").classList.contains("hidden")) {
+        closeEvent();
+        return;
+      }
+      if (e.key === "Escape" && !el("chest-overlay").classList.contains("hidden")) {
+        closeChest();
+        return;
+      }
       if (e.key === "Escape" && !el("codex-overlay").classList.contains("hidden")) {
         closeCodex();
         return;
@@ -20938,10 +23063,7 @@ function topicName(key) {
         return;
       }
       if (!el("battle-overlay").classList.contains("hidden")) return;
-      if (!el("end-overlay").classList.contains("hidden")) return;
-      if (!el("shop-overlay").classList.contains("hidden")) return;
-      if (!el("entrance-overlay").classList.contains("hidden")) return;
-      if (!el("dialog-overlay").classList.contains("hidden")) return;
+      if (overlayOpen()) return;
       if (el("screen-game").classList.contains("hidden")) return;
       // Пробел — пропуск хода: герой стоит, монстры ходят.
       if (e.key === " " || e.key === "Spacebar") {
