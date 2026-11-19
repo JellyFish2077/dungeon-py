@@ -936,9 +936,17 @@
     "Шаг по карте": "A step on the map",
     "Иди стрелками, WASD или коснись клетки.":
       "Move with arrows, WASD or by tapping a tile.",
+    "Иди стрелками или WASD; по клетке можно кликнуть.":
+      "Move with arrows or WASD; you can also click a tile.",
+    "Коснись клетки — герой пойдёт сам.":
+      "Tap a tile — the hero will walk there.",
     "Сундук": "Chest",
     "Подойди к сундуку и нажми кнопку действия: внутри добыча.":
       "Walk up to the chest and press the action button: it holds loot.",
+    "Подойди к сундуку и нажми E: внутри добыча.":
+      "Walk up to the chest and press E: it holds loot.",
+    "Подойди к сундуку и нажми кнопку действия внизу: внутри добыча.":
+      "Walk up to the chest and press the action button below: it holds loot.",
     "Столкнись с монстром и ответь на вопрос: верный ответ — твой удар.":
       "Run into a monster and answer the question: a correct answer is your strike.",
     "Костёр возвращает здоровье. Привалов на этаже немного.":
@@ -1198,6 +1206,10 @@
     "Заперт: нужен ключ": "Locked: a key is needed",
     "Сундук заперт. Найди ключ на этаже.":
       "The chest is locked. Find a key on this floor.",
+    "Сундук заперт. Ключ лежит на полу этажа и подбирается шагом.":
+      "The chest is locked. The key lies on the floor and is picked up by stepping on it.",
+    "Ключ от сундука: +1. Он открывает замок; ключи действуют только в этом походе.":
+      "Chest key: +1. It opens a lock; keys work only during this expedition.",
     "Замок открыт ключом": "Lock opened with a key",
     "Встреча на этаже": "Floor encounter",
     "Esc — уйти": "Esc — leave",
@@ -1630,11 +1642,28 @@
 
     /* --- справочник --- */
     "Справочник": "Codex",
-    "Управление, предметы, НПС и мобы": "Controls, items, NPCs and mobs",
+    "Управление, механики, предметы, НПС и мобы": "Controls, mechanics, items, NPCs and mobs",
     "НПС": "NPCs",
     "Мобы": "Mobs",
     "Боссы": "Bosses",
     "Предметы": "Items",
+    "Механики": "Mechanics",
+    "открывается кнопкой действия: внутри предмет, золото и материалы":
+      "opens with the action button: an item, gold and materials inside",
+    "нужен ключ; ключ лежит на полу этажа":
+      "a key is needed; the key lies on the floor",
+    "действуют только в текущем походе":
+      "work only during the current expedition",
+    "из трёх вещей можно взять только одну":
+      "you can take only one of the three items",
+    "может ударить при открытии, но никогда не убивает":
+      "may strike when opened, but never kills",
+    "странник или древний жребий; можно уйти без потерь":
+      "a wanderer or ancient dice; you can leave without loss",
+    "две вещи дают первый бонус, три — полный набор":
+      "two items give the first bonus, three complete the set",
+    "Комплект": "Set",
+    "Ловушка": "Trap",
     "Знания героя": "Hero's knowledge",
     "WASD / стрелки": "WASD / arrows",
     "ходить по карте": "walk around the map",

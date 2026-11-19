@@ -145,7 +145,7 @@ def main():
             }""")
             page.locator("button#menu-codex").click()
             page.wait_for_timeout(500)
-            for tab in ("controls", "items", "npcs", "mobs", "bosses"):
+            for tab in ("controls", "mechanics", "items", "npcs", "mobs", "bosses"):
                 page.locator("[data-codex-tab='%s']" % tab).click()
                 page.wait_for_timeout(350)
                 scan(page, "кодекс: " + tab)

@@ -3531,6 +3531,10 @@ log(/нужен ключ/.test(el("action-label").textContent),
 API.doInteract();
 log(G.treasures.length === 1 && G.lockpicks === 0,
   "без ключа сундук остаётся на карте");
+log(/на полу/i.test(el("game-msg").textContent),
+  "первая подсказка объясняет, где лежит ключ", el("game-msg").textContent);
+log(!!((getProfile(G.name).hints || {})["locked-chest"]),
+  "подсказка о замке запомнена в профиле");
 G.lockpicks = 1;
 const lockRandom = Math.random;
 Math.random = () => 1;
@@ -3548,6 +3552,16 @@ G.lockpicks = 0;
 API.move(keySpot.x - G.playerPos.x, keySpot.y - G.playerPos.y);
 log(G.lockpicks === 1 && G.chestKeyDrops.length === 0,
   "ключ на полу подбирается шагом");
+log(!!((getProfile(G.name).hints || {})["chest-key"]),
+  "подсказка о ключе запомнена в профиле");
+// Одноразовые подсказки: второй раз та же механика уже не объясняется.
+log(API.hintFirst("test-hint") === true && API.hintFirst("test-hint") === false,
+  "одноразовая подсказка показывается ровно один раз");
+log(!!((getProfile(G.name).hints || {})["test-hint"]),
+  "флаг подсказки сохранён в профиль");
+const hintProf = getProfile(G.name);
+if (hintProf.hints) delete hintProf.hints["test-hint"];
+putProfile(G.name, hintProf);
 // Случайная встреча: генерация, странник и древний жребий.
 const fakeEventState = {
   map: { grid: Array.from({ length: 6 }, () => Array(6).fill(1)) },
@@ -8376,6 +8390,17 @@ if (vault) {
   const tutIds = API.tutorialSteps().map((s) => s.id).join(",");
   log(tutIds === "move,chest,battle,camp,stairs",
     "обучение: пять шагов по порядку", tutIds);
+  const savedMatchMedia = globalThis.matchMedia;
+  globalThis.matchMedia = () => ({ matches: true, addListener() {}, removeListener() {} });
+  const touchSteps = API.tutorialSteps();
+  globalThis.matchMedia = savedMatchMedia;
+  log(/Коснись/.test(touchSteps[0].hint) && /внизу/.test(touchSteps[1].hint),
+    "обучение на touch говорит о касании и кнопке внизу",
+    touchSteps[0].hint + " | " + touchSteps[1].hint);
+  const keySteps = API.tutorialSteps();
+  log(/WASD/.test(keySteps[0].hint) && /нажми E/.test(keySteps[1].hint),
+    "обучение на клавиатуре говорит о WASD и E",
+    keySteps[0].hint + " | " + keySteps[1].hint);
   API.tutorialEvent("move");
   log(API.tutorialStepDone(G.tutorial, "move") && !API.tutorialStepDone(G.tutorial, "chest"),
     "обучение: первый шаг закрывается движением");
@@ -9646,6 +9671,10 @@ log(missBadge.side === "enemy" && missBadge.icon === "miss" &&
   log(/Гоблин-вожак/.test(bossCodex) && /Фазы/.test(bossCodex) &&
     /трофей получен/.test(bossCodex),
     "босс появился в справочнике с фазами и трофеем");
+  const mechanicsCodex = API.codexBodyHtml("mechanics");
+  log(/Запертый сундук/.test(mechanicsCodex) && /Ключи сундуков/.test(mechanicsCodex) &&
+    /Сундук с выбором/.test(mechanicsCodex) && /Встреча на этаже/.test(mechanicsCodex),
+    "справочник объясняет сундуки, ключи и встречи");
   // Справочник жителей: карточка каждого встреченного NPC должна нести
   // настоящий портрет из sprites.js. Раньше iconSvg("npc_" + key) не находил
   // иконок и все девять показывались слаймом-заглушкой.

@@ -77,6 +77,12 @@ def generator_scenario(page):
     """
     page.evaluate("() => window.__setFloor(3)")
     wait_floor(page)
+    # План может появиться на кадр позже, чем скрывается level-loading:
+    # ждём именно готовый план, иначе полный прогон изредка ловит пустой кэш.
+    page.wait_for_function(
+        "() => { const s = window.__pyquiz.cache[window.__pyquiz.floorIndex];"
+        " return s && s.plan && typeof s.plan.version === 'number'; }",
+        timeout=30000)
     version = page.evaluate(
         "() => { const s = window.__pyquiz.cache[window.__pyquiz.floorIndex];"
         " return s && s.plan ? s.plan.version : 0; }")
