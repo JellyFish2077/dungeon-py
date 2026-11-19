@@ -11955,7 +11955,15 @@
     G.chestKeyDrops.splice(idx, 1);
     G.lockpicks = (G.lockpicks || 0) + 1;
     log("Найден ключ от сундука. Всего ключей: " + G.lockpicks + ".", "loot");
-    toast("Ключ от сундука: +1", 2600);
+    if (hintFirst("chest-key")) {
+      // Первый ключ объясняет и назначение, и срок жизни ресурса: ключи
+      // сундуков не уходят в деревню и не переносятся в следующий поход.
+      const hint = "Ключ от сундука: +1. Он открывает замок; ключи действуют только в этом походе.";
+      toast(hint, 4600);
+      log("Подсказка: " + hint, "loot");
+    } else {
+      toast("Ключ от сундука: +1", 2600);
+    }
     updateHud();
     renderInventory();
     updateActionButton();
@@ -13106,9 +13114,15 @@
       let keySpent = false;
       if (targetChest.locked) {
         if (!(G.lockpicks > 0)) {
-          const noKey = "Сундук заперт. Найди ключ на этаже.";
+          // Первая встреча объясняет, откуда берётся ключ. Если игрок уже
+          // находил ключ, повторять нечего: он видел подсказку при подборе.
+          const firstLock = !hintSeen("chest-key") && hintFirst("locked-chest");
+          const noKey = firstLock
+            ? "Сундук заперт. Ключ лежит на полу этажа и подбирается шагом."
+            : "Сундук заперт. Найди ключ на этаже.";
           setMsg(noKey);
-          toast(noKey, 3200);
+          toast(noKey, firstLock ? 4600 : 3200);
+          if (firstLock) log("Подсказка: " + noKey, "loot");
           return;
         }
         G.lockpicks -= 1;
@@ -18024,6 +18038,24 @@ function topicName(key) {
     return typeof getProfile === "function" ? getProfile(name) : null;
   }
 
+  // Одноразовые подсказки о новых механиках. Флаг живёт в профиле, поэтому
+  // подсказка не повторяется в следующих походах и переживает перезагрузку.
+  // Без профиля (node-проверки, гость) молчим, а не сыплем сообщениями.
+  function hintSeen(key) {
+    const prof = hubProfile();
+    return !!(key && prof && prof.hints && prof.hints[key]);
+  }
+
+  function hintFirst(key) {
+    if (!key || hintSeen(key)) return false;
+    const prof = hubProfile();
+    if (!prof) return false;
+    prof.hints = prof.hints && typeof prof.hints === "object" ? prof.hints : {};
+    prof.hints[key] = 1;
+    try { putProfile(hubName(), prof); } catch (e) {}
+    return true;
+  }
+
   // Первый поход: ещё нет рекорда и нет сохранённого похода. Нужен для
   // подсказки «иди к стражу», пока игрок не понял цикл.
   function isFirstRun() {
@@ -18057,11 +18089,17 @@ function topicName(key) {
   // кнопкой. Пока шаг не пройден, панель остаётся на экране — раньше она
   // гасла после первого хода, и сундук, бой и привал игрок находил сам.
   function tutorialSteps() {
+    const touch = typeof window !== "undefined" && window.matchMedia &&
+      window.matchMedia("(pointer: coarse)").matches;
+    const tr = typeof window.tr === "function" ? window.tr : (text) => text;
     return [
       { id: "move", title: "Шаг по карте",
-        hint: "Иди стрелками, WASD или коснись клетки." },
+        hint: tr(touch ? "Коснись клетки — герой пойдёт сам."
+          : "Иди стрелками или WASD; по клетке можно кликнуть.") },
       { id: "chest", title: "Сундук",
-        hint: "Подойди к сундуку и нажми кнопку действия: внутри добыча." },
+        hint: tr(touch
+          ? "Подойди к сундуку и нажми кнопку действия внизу: внутри добыча."
+          : "Подойди к сундуку и нажми E: внутри добыча.") },
       { id: "battle", title: "Бой",
         hint: "Столкнись с монстром и ответь на вопрос: верный ответ — твой удар." },
       { id: "camp", title: "Привал",
@@ -19420,6 +19458,7 @@ function topicName(key) {
   // ---------- Справочник ----------
   const CODEX_TABS = {
     controls: "Управление",
+    mechanics: "Механики",
     items: "Предметы",
     npcs: "НПС",
     mobs: "Мобы",
@@ -19434,6 +19473,18 @@ function topicName(key) {
     ["Колесо мыши", "приблизить или отдалить карту"],
     ["Esc", "пауза или закрыть открытое окно"],
     ["Кузница", "улучшения героя у кузнеца в деревне"]
+  ];
+  // Короткий справочник по механикам, которые появляются после первого
+  // спуска: сундуки с замком и выбором, встречи и комплекты. Подсказки
+  // при первом столкновении быстро исчезают, а здесь всё остаётся под рукой.
+  const CODEX_MECHANICS = [
+    ["Сундук", "открывается кнопкой действия: внутри предмет, золото и материалы"],
+    ["Запертый сундук", "нужен ключ; ключ лежит на полу этажа"],
+    ["Ключи сундуков", "действуют только в текущем походе"],
+    ["Сундук с выбором", "из трёх вещей можно взять только одну"],
+    ["Ловушка", "может ударить при открытии, но никогда не убивает"],
+    ["Встреча на этаже", "странник или древний жребий; можно уйти без потерь"],
+    ["Комплект", "две вещи дают первый бонус, три — полный набор"]
   ];
   const CODEX_NPC_ROLES = {
     guard: "Спуск в подземелье",
@@ -19496,6 +19547,11 @@ function topicName(key) {
         "<div class='codex-key'><b>" + row[0] + "</b><span>" + row[1] + "</span></div>"
       ).join("") + "</div>";
     }
+    if (tab === "mechanics") {
+      return "<div class='codex-list'>" + CODEX_MECHANICS.map((row) =>
+        "<div class='codex-key'><b>" + row[0] + "</b><span>" + row[1] + "</span></div>"
+      ).join("") + "</div>";
+    }
     if (tab === "items") {
       const items = codexItemList();
       if (!items.length) {
@@ -19555,7 +19611,7 @@ function topicName(key) {
     if (!CODEX_TABS[codexTab]) codexTab = "controls";
     let html = "<div class='battle-head'><div>" +
       "<div class='enemy-name'>Справочник</div>" +
-      "<div class='hud-num'>Управление, предметы, НПС и мобы</div>" +
+      "<div class='hud-num'>Управление, механики, предметы, НПС и мобы</div>" +
       "</div><button class='exit-btn' id='codex-close' type='button' " +
       "data-tip='Закрыть справочник. Клавиша Escape.'>Закрыть</button></div>";
     html += "<div class='battle-mid codex-body'>" +
