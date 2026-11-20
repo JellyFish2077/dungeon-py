@@ -12,7 +12,7 @@ in `assets/itch/screenshots/`.
 
 - **Title:** Dungeon.Py
 - **Short description:** A dungeon game where every battle is a Python question. 15 floors, 5 bosses, one dragon. Browser, no server.
-- **Version:** 1.55.8
+- **Version:** 1.56.0
 - **Status:** In development (early access)
 - **Price:** free (voluntary donations optional)
 - **Genre:** RPG / Roguelike / Educational
@@ -52,9 +52,14 @@ Questions come in five forms:
 A full run takes about **two hours** and ends if you die.
 
 After floor six the road is closed until you return to the village and rebuild
-the forge. The village stays between runs: the barn, the well, the forge and
-the master's house give permanent upgrades. Materials and keys are not lost
-when you die.
+the forge. The village stays between runs: the barn, the workbench, the forge
+and the master's house give permanent upgrades. Village materials and building
+keys are not lost when you die.
+
+Chests now come in three flavours: **locked chests** opened with keys found on
+the floor, **choice chests** with three rewards, and **traps** that hurt but
+never kill. Some floors also hold **encounters**: a wanderer who heals or sells
+an item, and ancient dice that cost health for a chance at a find.
 
 ### Saves and privacy
 
@@ -93,6 +98,10 @@ can support it on Boosty: https://boosty.to/YOUR_PAGE
 - Run omens that change risk and reward.
 - Three crossroads choices: a deal, a gift, or walk past.
 - Equipment, rarities, sets, potions and return amulets.
+- Locked chests with keys, choice chests with three rewards, and non-lethal traps.
+- Floor encounters: a wanderer and ancient dice.
+- A Mechanics tab in the codex and first-time hints for new mechanics.
+- A mobile inventory sheet that opens from any item tile.
 - Three save slots with export and import.
 - 32×32 pixel art made in Aseprite.
 - Mouse and keyboard on desktop; touch on phones.
@@ -130,7 +139,7 @@ and Python code is checked by Pyodide right in the browser.
 
 ## Upload assets
 
-- Archive: `dist/dungeonpy-standalone-1.55.8.zip` (contains `LICENSE` and `CREDITS.md`)
+- Archive: `dist/dungeonpy-standalone-1.56.0.zip` (contains `LICENSE` and `CREDITS.md`)
 - Cover: `assets/itch/cover-630x500-en.png` — `python tools/make_itch_cover.py --lang en`
   (background and dragon sprite come from the build)
 - Icon: `assets/logo/DungeonPy-icon-512.png` — for the Boosty/social avatar;
@@ -143,6 +152,9 @@ and Python code is checked by Pyodide right in the browser.
   - `assets/itch/screenshots/village-en.png`
   - `assets/itch/screenshots/journal-en.png`
   - `assets/itch/screenshots/battle-en.png`
+  - `assets/itch/screenshots/chest-en.png`
+  - `assets/itch/screenshots/event-en.png`
+  - `assets/itch/screenshots/inventory-en.png`
 
 The archive already has `index.html` at its root and a local Pyodide.
 Upload it as an **HTML game**, not as a regular file.
@@ -171,6 +183,7 @@ The page theme can match the cover:
 ## Pre-publication checklist
 
 - [ ] Play the opening from the site root: guard → battle → gate → village.
+- [ ] Check a locked chest, a choice chest and a floor encounter in the uploaded build.
 - [ ] Check saving, loading, export and import of a save.
 - [ ] Confirm Mobile friendly is on and the page has no “desktop only” note.
 - [ ] Make sure the main menu does not link out to a separate landing page.
@@ -178,7 +191,7 @@ The page theme can match the cover:
 - [ ] Upload the archive and confirm the game starts from `index.html`.
 - [ ] Set the License field to **MIT**. `LICENSE` and `CREDITS.md` are inside the archive.
 - [ ] In the embed, sandboxing blocks save downloads, so the save menu has “Show JSON” — use that to verify save transfer.
-- [ ] Add the cover and four screenshots.
+- [ ] Add the cover and the screenshots.
 - [ ] Check the page in a private window.
 - [ ] After publishing, update the link in the README.
 

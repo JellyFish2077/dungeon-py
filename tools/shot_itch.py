@@ -35,11 +35,13 @@ def out_path(name):
 
 
 def patch_game(route):
-    """Открывает бой напрямую: иначе до врага пришлось бы идти по карте."""
+    """Открывает бой и новые окна напрямую: иначе до них пришлось бы идти."""
     resp = route.fetch()
     body = resp.text().replace(
         "window.__pyquiz = G;",
-        "window.__pyquiz = G; window.__openBattle = openBattle;",
+        "window.__pyquiz = G; window.__openBattle = openBattle;"
+        " window.__openChest = openChestWindow; window.__openEvent = openEvent;"
+        " window.__itemPool = ITEM_POOL; window.__recalc = recalcStats;",
     )
     route.fulfill(
         status=resp.status,
@@ -178,6 +180,82 @@ def shot_village(page, base):
     page.screenshot(path=str(out_path("village")))
 
 
+def go_floor(page, index):
+    page.evaluate("(n) => window.__setFloor(n)", index)
+    page.wait_for_function(
+        "() => document.getElementById('level-loading').classList.contains('hidden')",
+        timeout=30000,
+    )
+    page.wait_for_timeout(700)
+    # Плашка «Этаж N» перекрывает окна находок и встреч — закрываем её.
+    page.evaluate(
+        "() => { const b = document.getElementById('floor-arrival-close');"
+        " if (b) b.click(); }"
+    )
+    page.wait_for_timeout(500)
+
+
+def shot_chest(page, base):
+    start_dungeon(page, base, dev=True)
+    go_floor(page, 4)
+    page.evaluate(
+        """() => {
+            const ids = ["frost_axe", "frost_bulwark", "frost_heart"];
+            const opts = ids.map((id) =>
+                Object.assign({}, window.__itemPool.find((item) => item.id === id)));
+            window.__openChest({
+                options: opts, chest: { x: 0, y: 0 }, pending: true,
+                keySpent: true, amulet: false, gold: 0, material: null, trap: 7
+            });
+        }"""
+    )
+    page.wait_for_timeout(900)
+    tidy(page)
+    page.screenshot(path=str(out_path("chest")))
+
+
+def shot_event(page, base):
+    start_dungeon(page, base, dev=True)
+    go_floor(page, 4)
+    page.evaluate(
+        """() => {
+            window.__pyquiz.player.hp = 20;
+            window.__pyquiz.player.gold = 40;
+            window.__openEvent({ uid: 1, x: 0, y: 0, kind: "wanderer" });
+        }"""
+    )
+    page.wait_for_timeout(900)
+    tidy(page)
+    page.screenshot(path=str(out_path("event")))
+
+
+def shot_inventory(page, base):
+    start_dungeon(page, base, dev=True)
+    if page.locator("#tutorial-skip").is_visible():
+        page.click("#tutorial-skip")
+        page.wait_for_timeout(200)
+    page.evaluate(
+        """() => {
+            const g = window.__pyquiz;
+            const item = (id) =>
+                Object.assign({}, window.__itemPool.find((it) => it.id === id));
+            g.player.gold = 92;
+            g.lockpicks = 2;
+            g.equipment.weapon = item("frost_axe");
+            g.equipment.shield = item("frost_bulwark");
+            g.inventory = [
+                item("frost_heart"), item("dawn_blade"), item("dawn_crown"),
+                item("small_potion")
+            ];
+            window.__recalc();
+        }"""
+    )
+    page.click(".nav-btn[data-panel='inventory']")
+    page.wait_for_timeout(700)
+    tidy(page)
+    page.screenshot(path=str(out_path("inventory")))
+
+
 def main():
     global LANG
     parser = argparse.ArgumentParser()
@@ -200,8 +278,12 @@ def main():
                     ("battle", shot_battle),
                     ("journal", shot_journal),
                     ("village", shot_village),
+                    ("chest", shot_chest),
+                    ("event", shot_event),
+                    ("inventory", shot_inventory),
                 ):
-                    page = new_page(browser, dev=(name == "battle"))
+                    page = new_page(browser, dev=(name in (
+                        "battle", "chest", "event", "inventory")))
                     shot(page, base)
                     page.close()
                     path = out_path(name)
