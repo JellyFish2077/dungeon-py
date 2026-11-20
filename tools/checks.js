@@ -3525,6 +3525,13 @@ G.treasures = [{
   item: Object.assign({}, API.ITEM_POOL[0])
 }];
 G.lockpicks = 0;
+// Проверка про первую подсказку должна стартовать с чистого профиля:
+// предыдущие сценарии могли уже подобрать ключ, и тогда замок молчит.
+const lockHints = getProfile(G.name);
+lockHints.hints = lockHints.hints || {};
+delete lockHints.hints["locked-chest"];
+delete lockHints.hints["chest-key"];
+putProfile(G.name, lockHints);
 API.updateActionButton();
 log(/нужен ключ/.test(el("action-label").textContent),
   "запертый сундук честно просит ключ", el("action-label").textContent);
