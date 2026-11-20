@@ -1420,6 +1420,19 @@
         "data-tip='Close updates. Escape.'>Close</button></div>" +
         "<div class='battle-mid updates-body'>" +
         "<article class='update-entry'>" +
+        "<div class='update-entry-head'><h3>Chests with secrets, encounters and two new sets</h3>" +
+        "<span class='update-version'>v1.56.0</span></div>" +
+        "<div class='update-date'>November 20, 2026</div>" +
+        "<ul>" +
+        "<li>Locked chests and keys: a key lies on the floor and opens one lock.</li>" +
+        "<li>Choice chests offer three items, but you can take only one; a trap hurts but never kills.</li>" +
+        "<li>Floor encounters: a wanderer heals or sells an item, while the ancient dice cost 20 HP.</li>" +
+        "<li>Five new items and two sets: Winter's Vow and Dawn.</li>" +
+        "<li>The Chest inventory gets a mobile item sheet.</li>" +
+        "<li>First-time hints for keys and locks, plus a Mechanics tab in the codex.</li>" +
+        "<li>Crypts are one monster lighter, and the storm hazard is gone from floor 5.</li>" +
+        "</ul></article>" +
+        "<article class='update-entry'>" +
         "<div class='update-entry-head'><h3>Three new floor hazards</h3>" +
         "<span class='update-version'>v1.55.12</span></div>" +
         "<div class='update-date'>November 17, 2026</div>" +
