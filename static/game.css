@@ -2529,6 +2529,27 @@ pre.code {
   color: #fecaca;
 }
 
+.copy-code-line {
+  display: block;
+  min-height: 1.45em;
+}
+
+.copy-code-line.is-bad {
+  background: rgba(239, 68, 68, 0.22);
+  box-shadow: inset 2px 0 0 #f87171;
+}
+
+.copy-code-line.is-focus {
+  background: rgba(246, 196, 83, 0.12);
+  box-shadow: inset 2px 0 0 #f6c453;
+}
+
+.copy-code-more {
+  display: block;
+  color: #93a8c8;
+  text-align: center;
+}
+
 .copy-diff-mark {
   border-radius: 2px;
   background: rgba(239, 68, 68, 0.5);

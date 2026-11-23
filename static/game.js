@@ -15647,19 +15647,59 @@
     return before + "<mark class='copy-diff-mark'>" + mark + "</mark>" + after;
   }
 
-  function copyDiffHtml(issue) {
+  function copyFullLinesHtml(lines, badLine, issue, side) {
+    const d = issue.diff;
+    const total = lines.length;
+    const maxLines = 40;
+    let start = 0;
+    let end = total;
+    if (total > maxLines) {
+      start = Math.max(0, badLine - 12);
+      end = Math.min(total, start + maxLines);
+    }
+    const rows = [];
+    if (start > 0) rows.push("<span class='copy-code-more'>…</span>");
+    for (let i = start; i < end; i += 1) {
+      const line = lines[i];
+      if (i === badLine && d) {
+        const mark = side === "expected" ? d.expectedMark : d.actualMark;
+        const cls = side === "expected" ? "is-focus" : "is-bad";
+        rows.push("<span class='copy-code-line " + cls + "'>" +
+          copyMarkedLine(line, d.col, mark, issue.visualize) + "</span>");
+      } else if (line == null) {
+        rows.push("<span class='copy-code-line'><em>(нет строки)</em></span>");
+      } else if (!line) {
+        rows.push("<span class='copy-code-line'><em>(пустая строка)</em></span>");
+      } else {
+        rows.push("<span class='copy-code-line'>" + escText(
+          line.length > 240 ? line.slice(0, 240) + "…" : line) + "</span>");
+      }
+    }
+    if (end < total) rows.push("<span class='copy-code-more'>…</span>");
+    return rows.join("");
+  }
+
+  function copyDiffHtml(issue, typed, target) {
     if (!issue || !issue.diff) return "";
     const d = issue.diff;
     const title = "Где ошибка · строка " + (d.line + 1);
     const expectedMark = d.expectedMark != null ? d.expectedMark : d.markLen;
     const actualMark = d.actualMark != null ? d.actualMark : d.markLen;
+    const expectedLines = normalizeCopyText(target).split("\n");
+    const actualLines = normalizeCopyText(typed).split("\n");
+    const expectedIssue = Object.assign({}, issue, {
+      diff: Object.assign({}, d, { expectedMark: expectedMark })
+    });
+    const actualIssue = Object.assign({}, issue, {
+      diff: Object.assign({}, d, { actualMark: actualMark })
+    });
     return "<div class='copy-diff'>" +
       "<div class='copy-diff-title'>" + title + "</div>" +
       "<div class='copy-diff-row'><span>Образец</span><code>" +
-      copyMarkedLine(d.expected, d.col, expectedMark, issue.visualize) +
+      copyFullLinesHtml(expectedLines, d.line, expectedIssue, "expected") +
       "</code></div>" +
       "<div class='copy-diff-row is-bad'><span>У тебя</span><code>" +
-      copyMarkedLine(d.actual, d.col, actualMark, issue.visualize) +
+      copyFullLinesHtml(actualLines, d.line, actualIssue, "actual") +
       "</code></div>" +
       (issue.note ? "<p class='copy-diff-note'>" + escText(issue.note) + "</p>" : "") +
       "</div>";
@@ -15673,7 +15713,7 @@
     const issue = loose ? copyWhitespaceIssue(typed, target) : copyCharIssue(typed, target);
     return {
       exact: false, loose: loose, message: issue.message, issue: issue,
-      html: copyDiffHtml(issue)
+      html: copyDiffHtml(issue, typed, target)
     };
   }
 
@@ -20064,6 +20104,17 @@ function topicName(key) {
   // ---------- Обновления ----------
   // Короткая лента новостей для главного меню. Новые записи — сверху.
   const UPDATES = [
+    {
+      version: "1.56.2",
+      date: "23 ноября 2026",
+      title: "Пояснение показывает весь код",
+      items: [
+        "В разборе ошибки «Перепиши код» теперь видны все строки образца и твоего ответа.",
+        "Строка с ошибкой подсвечена: образец — янтарным, ответ — красным.",
+        "Несовпавший символ отмечен; пробелы и табуляция видны как · и →.",
+        "Длинный код показывается окном вокруг ошибки, чтобы пояснение не разрасталось."
+      ]
+    },
     {
       version: "1.56.1",
       date: "23 ноября 2026",

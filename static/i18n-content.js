@@ -1420,6 +1420,16 @@
         "data-tip='Close updates. Escape.'>Close</button></div>" +
         "<div class='battle-mid updates-body'>" +
         "<article class='update-entry'>" +
+        "<div class='update-entry-head'><h3>Explanations show the full code</h3>" +
+        "<span class='update-version'>v1.56.2</span></div>" +
+        "<div class='update-date'>November 23, 2026</div>" +
+        "<ul>" +
+        "<li>The copy-task explanation now shows every line of the sample and your answer.</li>" +
+        "<li>The mismatching line is highlighted: the sample in amber, your answer in red.</li>" +
+        "<li>The differing character is marked; spaces and tabs appear as · and →.</li>" +
+        "<li>Long code is shown as a window around the error so the card stays compact.</li>" +
+        "</ul></article>" +
+        "<article class='update-entry'>" +
         "<div class='update-entry-head'><h3>Copy tasks: exact copies and clear mismatches</h3>" +
         "<span class='update-version'>v1.56.1</span></div>" +
         "<div class='update-date'>November 23, 2026</div>" +
