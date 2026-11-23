@@ -1420,6 +1420,17 @@
         "data-tip='Close updates. Escape.'>Close</button></div>" +
         "<div class='battle-mid updates-body'>" +
         "<article class='update-entry'>" +
+        "<div class='update-entry-head'><h3>Copy tasks: exact copies and clear mismatches</h3>" +
+        "<span class='update-version'>v1.56.1</span></div>" +
+        "<div class='update-date'>November 23, 2026</div>" +
+        "<ul>" +
+        "<li>Non-breaking and narrow spaces from mobile keyboards no longer break an exact copy.</li>" +
+        "<li>When a character really differs, the explanation shows the line, the sample and your answer with the mismatch highlighted.</li>" +
+        "<li>Typographic quotes, Cyrillic letters and tabs are named explicitly — what is wrong and what to type.</li>" +
+        "<li>Zero-width characters and BOM are not swallowed: the game names the invisible character and asks you to remove it.</li>" +
+        "<li>The checker reads the current input field, so mobile input and autocorrect are not lost.</li>" +
+        "</ul></article>" +
+        "<article class='update-entry'>" +
         "<div class='update-entry-head'><h3>Chests with secrets, encounters and two new sets</h3>" +
         "<span class='update-version'>v1.56.0</span></div>" +
         "<div class='update-date'>November 20, 2026</div>" +

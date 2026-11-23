@@ -8130,7 +8130,7 @@
         "</div>";
     }
     if (schoolView.practiceResult) {
-      html += "<p class='school-result'>" + schoolView.practiceResult + "</p>";
+      html += "<div class='school-result'>" + schoolView.practiceResult + "</div>";
     }
     return html;
   }
@@ -8157,15 +8157,13 @@
     const typed = field ? field.value : "";
     schoolView.practiceInput = typed;
     if (item.kind === "copy") {
-      const exact = normalizeExact(typed) === normalizeExact(item.task.code);
-      const loose = normalizeLoose(typed) === normalizeLoose(item.task.code);
+      const cmp = copyDiagnostic(typed, item.task.code);
+      const note = cmp.exact ? copyNormalizedNote(typed) : "";
       schoolView.practiceChecked = true;
-      schoolView.practiceResult = exact
-        ? "Код совпал. " + (item.task.explanation || "")
-        : loose
-          ? "Почти: проверь отступы и лишние пробелы."
-          : "Пока не совпадает. Сравни с образцом и попробуй снова.";
-      if (exact) completePracticeTask(item);
+      schoolView.practiceResult = cmp.exact
+        ? "Код совпал. " + (note ? note + " " : "") + (item.task.explanation || "")
+        : escText(cmp.message) + " " + (item.task.explanation || "") + cmp.html;
+      if (cmp.exact) completePracticeTask(item);
       renderSchool();
       return;
     }
@@ -15285,18 +15283,398 @@
     };
   }
 
-  function normalizeExact(s) {
-    return s
-      .replace(/\r/g, "")
+  // ---------- «Перепиши код»: сверка и объяснение ошибки ----------
+  // Неразрывные пробелы приходят с мобильных клавиатур и выглядят как
+  // обычные; их заменяем, иначе точная копия молча считается ошибкой.
+  // Остальные невидимые символы (zero-width, мягкий перенос, bidi) и
+  // типографские кавычки/тире — уже другой символ: не подменяем, а
+  // показываем точное место ошибки. Так игра не учит нерабочему Python.
+  const COPY_SPACES = /[\u00A0\u2007\u202F]/g;
+  const COPY_SPACE_NAMES = {
+    "\u2009": "тонкий пробел (U+2009)",
+    "\u200A": "волосяной пробел (U+200A)",
+    "\u1680": "пробел огамики (U+1680)",
+    "\u205F": "средний математический пробел (U+205F)",
+    "\u3000": "идеографический пробел (U+3000)"
+  };
+  const COPY_SPECIAL_NAMES = {
+    "\u200B": "невидимый пробел нулевой ширины (U+200B)",
+    "\u200C": "невидимый разделитель без соединения (U+200C)",
+    "\u200D": "невидимый соединитель (U+200D)",
+    "\u2060": "невидимый соединитель слов (U+2060)",
+    "\u00AD": "мягкий перенос (U+00AD)",
+    "\uFEFF": "BOM (U+FEFF)",
+    "\u034F": "соединитель графем (U+034F)",
+    "\u180E": "монгольский разделитель (U+180E)",
+    "\u200E": "маркер направления слева направо (U+200E)",
+    "\u200F": "маркер направления справа налево (U+200F)"
+  };
+  const COPY_CONFUSABLES = {
+    "а": "a", "в": "b", "е": "e", "к": "k", "м": "m", "н": "h", "о": "o",
+    "р": "p", "с": "c", "т": "t", "у": "y", "х": "x", "і": "i", "ј": "j",
+    "ѕ": "s", "ԁ": "d", "һ": "h", "ӏ": "l", "ɡ": "g",
+    "А": "A", "В": "B", "Е": "E", "К": "K", "М": "M", "Н": "H", "О": "O",
+    "Р": "P", "С": "C", "Т": "T", "У": "Y", "Х": "X", "І": "I", "Ј": "J",
+    "Ѕ": "S", "Ӏ": "I",
+    "α": "a", "ο": "o", "ρ": "p", "ν": "v", "ι": "i", "κ": "k", "χ": "x", "υ": "u"
+  };
+  const COPY_QUOTES = {
+    "‘": "'", "’": "'", "‚": "'", "‛": "'", "′": "'",
+    "“": "\"", "”": "\"", "„": "\"", "‟": "\"", "″": "\"",
+    "«": "\"", "»": "\""
+  };
+  const COPY_DASHES = { "–": "-", "—": "-", "−": "-" };
+
+  function normalizeCopyText(s) {
+    let text = String(s == null ? "" : s);
+    if (text.normalize) text = text.normalize("NFC");
+    return text
+      .replace(/\r\n?/g, "\n")
+      // BOM — артефакт кодировки только в начале; внутри текста он значим.
+      .replace(/^\uFEFF/, "")
+      .replace(COPY_SPACES, " ")
       .split("\n")
-      .map((l) => l.replace(/[ \t]+$/, ""))
+      .map((line) => line.replace(/[ \t]+$/, ""))
       .join("\n")
       .replace(/^\n+/, "")
       .replace(/\n+$/, "");
   }
 
+  function normalizeExact(s) {
+    return normalizeCopyText(s);
+  }
+
   function normalizeLoose(s) {
-    return s.replace(/\s+/g, "");
+    return normalizeCopyText(s).replace(/\s+/g, "");
+  }
+
+  function copyCharScript(ch) {
+    if (!ch) return "";
+    if (/[А-Яа-яЁё]/.test(ch)) return "русская";
+    if (/[Ͱ-Ͽ]/.test(ch)) return "греческая";
+    if (/[A-Za-z]/.test(ch)) return "латинская";
+    return "другая";
+  }
+
+  function copyCharScriptGenitive(ch) {
+    const script = copyCharScript(ch);
+    if (script === "русская") return "русской";
+    if (script === "греческая") return "греческой";
+    if (script === "латинская") return "латинской";
+    return "другой";
+  }
+
+  function copyCodePoint(ch) {
+    if (!ch) return "—";
+    return "U+" + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
+  }
+
+  function copyFullWidthAscii(ch) {
+    if (!ch) return "";
+    const code = ch.charCodeAt(0);
+    if (code >= 0xFF01 && code <= 0xFF5E) return String.fromCharCode(code - 0xFEE0);
+    if (code === 0x3000) return " ";
+    return "";
+  }
+
+  function copySpecialName(ch) {
+    if (!ch) return "";
+    if (COPY_SPECIAL_NAMES[ch]) return COPY_SPECIAL_NAMES[ch];
+    const code = ch.codePointAt(0);
+    if (code >= 0x202A && code <= 0x202E) {
+      return "bidi-управление (U+" + code.toString(16).toUpperCase().padStart(4, "0") + ")";
+    }
+    if (code >= 0x2066 && code <= 0x2069) {
+      return "bidi-изолят (U+" + code.toString(16).toUpperCase().padStart(4, "0") + ")";
+    }
+    if (code >= 0xFE00 && code <= 0xFE0F) {
+      return "селектор начертания (U+" + code.toString(16).toUpperCase().padStart(4, "0") + ")";
+    }
+    if (code >= 0xE0001 && code <= 0xE007F) {
+      return "тег-символ (U+" + code.toString(16).toUpperCase().padStart(4, "0") + ")";
+    }
+    if (code === 0x000B) return "вертикальная табуляция (U+000B)";
+    if (code === 0x000C) return "перевод страницы (U+000C)";
+    if (code === 0x0085) return "перевод строки NEL (U+0085)";
+    if (code === 0x2028) return "разделитель строк (U+2028)";
+    if (code === 0x2029) return "разделитель абзацев (U+2029)";
+    return "";
+  }
+
+  function copyNormalizedNote(typed) {
+    const spaces = [];
+    if (/\u00A0/.test(typed)) spaces.push("неразрывные U+00A0");
+    if (/\u202F/.test(typed)) spaces.push("узкие U+202F");
+    if (/\u2007/.test(typed)) spaces.push("цифровые U+2007");
+    const parts = [];
+    if (spaces.length) parts.push(spaces.join(", ") + " заменены обычными пробелами");
+    if (/^\uFEFF/.test(typed)) parts.push("BOM U+FEFF удалён");
+    return parts.length ? "Засчитано: " + parts.join("; ") + "." : "";
+  }
+
+  function copyPlural(n, one, few, many) {
+    const tail = n % 100;
+    const last = n % 10;
+    if (last === 1 && tail !== 11) return one;
+    if (last >= 2 && last <= 4 && (tail < 10 || tail >= 20)) return few;
+    return many;
+  }
+
+  function copyFirstDiffIndex(a, b) {
+    const aa = Array.from(a);
+    const bb = Array.from(b);
+    const max = Math.min(aa.length, bb.length);
+    let i = 0;
+    while (i < max && aa[i] === bb[i]) i += 1;
+    return i;
+  }
+
+  function copyIndent(line) {
+    const m = String(line == null ? "" : line).match(/^[ \t]*/);
+    return m ? m[0] : "";
+  }
+
+  function firstCopyDiff(typed, target) {
+    const a = normalizeCopyText(typed).split("\n");
+    const b = normalizeCopyText(target).split("\n");
+    const lines = Math.max(a.length, b.length);
+    for (let i = 0; i < lines; i += 1) {
+      if (a[i] === b[i]) continue;
+      if (a[i] == null) {
+        return { line: i, col: 0, expected: b[i], actual: null, kind: "missing-line" };
+      }
+      if (b[i] == null) {
+        return { line: i, col: 0, expected: null, actual: a[i], kind: "extra-line" };
+      }
+      return {
+        line: i, col: copyFirstDiffIndex(a[i], b[i]),
+        expected: b[i], actual: a[i], kind: "char"
+      };
+    }
+    return null;
+  }
+
+  function copyWhitespaceIssue(typed, target) {
+    const a = normalizeCopyText(typed).split("\n");
+    const b = normalizeCopyText(target).split("\n");
+    const lines = Math.max(a.length, b.length);
+    for (let i = 0; i < lines; i += 1) {
+      if (a[i] === b[i]) continue;
+      if (a[i] == null) {
+        const msg = "В коде не хватает строки " + (i + 1) + ".";
+        return { message: msg, note: msg, visualize: true,
+          diff: { line: i, expected: b[i], actual: null, col: 0 } };
+      }
+      if (b[i] == null) {
+        const msg = "В коде лишняя строка " + (i + 1) + ".";
+        return { message: msg, note: msg, visualize: true,
+          diff: { line: i, expected: null, actual: a[i], col: 0 } };
+      }
+      if (!a[i] || !b[i]) {
+        const msg = "В коде " + (a[i] ? "лишняя" : "не хватает") + " строки " + (i + 1) + ".";
+        return {
+          message: msg, note: msg, visualize: true,
+          diff: { line: i, expected: a[i] ? null : b[i], actual: a[i] ? a[i] : null, col: 0 }
+        };
+      }
+      const ai = copyIndent(a[i]);
+      const bi = copyIndent(b[i]);
+      if (ai !== bi) {
+        const need = bi.length;
+        const has = ai.length;
+        const needWord = copyPlural(need, "пробел", "пробела", "пробелов");
+        let msg;
+        if (ai.indexOf("\t") >= 0) {
+          msg = "В строке " + (i + 1) + " отступ сделан табуляцией, а в образце — " +
+            need + " " + needWord + ".";
+        } else if (has === 0) {
+          msg = "В строке " + (i + 1) + " нет отступа, а нужен " +
+            need + " " + needWord + ".";
+        } else if (need === 0) {
+          msg = "В строке " + (i + 1) + " лишний отступ: " + has + " " +
+            copyPlural(has, "пробел", "пробела", "пробелов") + ".";
+        } else {
+          msg = "В строке " + (i + 1) + " отступ " + has + " " +
+            copyPlural(has, "пробел", "пробела", "пробелов") + ", а нужен " +
+            need + " " + needWord + ".";
+        }
+        return {
+          message: msg, note: msg, visualize: true,
+          diff: { line: i, expected: b[i], actual: a[i], col: 0,
+            expectedMark: bi.length, actualMark: ai.length }
+        };
+      }
+      const col = copyFirstDiffIndex(a[i], b[i]);
+      const charsA = Array.from(a[i]);
+      const charsB = Array.from(b[i]);
+      const pa = charsA[col];
+      const pb = charsB[col];
+      const invisibleName = copySpecialName(pa) || copySpecialName(pb);
+      if (invisibleName) {
+        const msg = "В строке " + (i + 1) + " " +
+          (copySpecialName(pa) ? "стоит " + copySpecialName(pa)
+            : "не хватает " + copySpecialName(pb)) + ".";
+        return {
+          message: msg, note: msg, visualize: true,
+          diff: { line: i, expected: b[i], actual: a[i], col: col,
+            expectedMark: 1, actualMark: 1 }
+        };
+      }
+      const spaceName = COPY_SPACE_NAMES[pa] || COPY_SPACE_NAMES[pb];
+      if (spaceName) {
+        const msg = "В строке " + (i + 1) + " " +
+          (COPY_SPACE_NAMES[pa] ? "стоит " + COPY_SPACE_NAMES[pa]
+            : "не хватает " + COPY_SPACE_NAMES[pb]) + ".";
+        return {
+          message: msg, note: msg, visualize: true,
+          diff: { line: i, expected: b[i], actual: a[i], col: col,
+            expectedMark: 1, actualMark: 1 }
+        };
+      }
+      const runLen = (chars, pos) => {
+        let start = Math.min(pos, chars.length);
+        let end = start;
+        while (start > 0 && (chars[start - 1] === " " || chars[start - 1] === "\t")) {
+          start -= 1;
+        }
+        while (end < chars.length && (chars[end] === " " || chars[end] === "\t")) {
+          end += 1;
+        }
+        return { start: start, len: Math.max(1, end - start) };
+      };
+      const ra = runLen(charsA, col);
+      const rb = runLen(charsB, col);
+      // Первое расхождение может стоять сразу после пробельного прогона:
+      // начинаем подсветку с общего начала, чтобы не подсвечивать букву.
+      const start = Math.min(ra.start, rb.start);
+      const ra2 = runLen(charsA, start);
+      const rb2 = runLen(charsB, start);
+      const msg = "В строке " + (i + 1) +
+        " пробелы внутри строки не совпадают с образцом.";
+      return {
+        message: msg, note: msg, visualize: true,
+        diff: { line: i, expected: b[i], actual: a[i], col: start,
+          expectedMark: rb2.len, actualMark: ra2.len }
+      };
+    }
+    const msg = "Код совпал, но пробелы или отступы отличаются от образца.";
+    return { message: msg, note: msg, visualize: true, diff: null };
+  }
+
+  function copyCharIssue(typed, target) {
+    const d = firstCopyDiff(typed, target);
+    if (!d) {
+      const msg = "Код отличается от образца.";
+      return { message: msg, note: msg, diff: null };
+    }
+    if (d.kind === "missing-line") {
+      const msg = "В коде не хватает строки " + (d.line + 1) + ".";
+      return { message: msg, note: msg, diff: d };
+    }
+    if (d.kind === "extra-line") {
+      const msg = "В коде лишняя строка " + (d.line + 1) + ".";
+      return { message: msg, note: msg, diff: d };
+    }
+    const pChars = Array.from(d.actual || "");
+    const tChars = Array.from(d.expected || "");
+    const p = pChars[d.col] || "";
+    const t = tChars[d.col] || "";
+    const lineNo = d.line + 1;
+    let msg;
+    if (!p) {
+      msg = "В строке " + lineNo + " не хватает символа «" + t + "» (" + copyCodePoint(t) + ").";
+    } else if (!t) {
+      msg = "В строке " + lineNo + " лишний символ «" + p + "» (" + copyCodePoint(p) + ").";
+    } else if (copySpecialName(p) || copySpecialName(t)) {
+      const badP = copySpecialName(p);
+      const badT = copySpecialName(t);
+      if (badP && badT) {
+        msg = "В строке " + lineNo + " невидимый символ " + badP +
+          " вместо " + badT + ".";
+      } else if (badP) {
+        msg = "В строке " + lineNo + " лишний невидимый символ: " + badP +
+          ". Удали его из кода.";
+      } else {
+        msg = "В строке " + lineNo + " не хватает невидимого символа: " +
+          badT + ".";
+      }
+    } else if (copyFullWidthAscii(p) === t) {
+      msg = "В строке " + lineNo + " полноширинный символ «" + p + "» (" +
+        copyCodePoint(p) + "); нужен обычный «" + t + "».";
+    } else if (COPY_CONFUSABLES[p] && COPY_CONFUSABLES[p].toLowerCase() === t.toLowerCase()) {
+      msg = "В строке " + lineNo + " " + copyCharScript(p) + " буква «" + p +
+        "» вместо " + copyCharScriptGenitive(t) + " «" + t + "». Переключи раскладку.";
+    } else if (COPY_QUOTES[p] === t) {
+      msg = "В строке " + lineNo + " стоит типографская кавычка «" + p + "» (" +
+        copyCodePoint(p) + "); в Python нужна обычная «" + t + "» (" +
+        copyCodePoint(t) + ").";
+    } else if (COPY_DASHES[p] === t) {
+      msg = "В строке " + lineNo + " стоит тире «" + p + "» (" +
+        copyCodePoint(p) + "); в коде нужен обычный дефис «-».";
+    } else if (p === "…") {
+      msg = "В строке " + lineNo + " стоит многоточие «…» (" +
+        copyCodePoint(p) + "); в образце другие символы.";
+    } else {
+      msg = "В строке " + lineNo + ", символ " + (d.col + 1) +
+        ": ожидалось «" + t + "» (" + copyCodePoint(t) + "), а у тебя «" +
+        p + "» (" + copyCodePoint(p) + ").";
+    }
+    return { message: msg, note: msg, diff: d };
+  }
+
+  function copyMarkedLine(line, col, markLen, visualize) {
+    if (line == null) return "<em>(нет строки)</em>";
+    let text = String(line);
+    if (visualize) text = text.replace(/ /g, "·").replace(/\t/g, "→");
+    if (!text.length) return "<em>(пустая строка)</em>";
+    const chars = Array.from(text);
+    const start = Math.max(0, Math.min(Number(col) || 0, chars.length));
+    const requested = markLen == null ? 1 : Number(markLen);
+    const len = Math.max(0, Math.min(requested || 0, chars.length - start));
+    if (!len) {
+      if (start >= chars.length) {
+        return escText(text) + "<mark class='copy-diff-mark'>∅</mark>";
+      }
+      return escText(text);
+    }
+    const before = escText(chars.slice(0, start).join(""));
+    const slice = chars.slice(start, start + len).join("");
+    const special = len === 1 ? copySpecialName(chars[start]) : "";
+    const mark = escText(special
+      ? "<" + copyCodePoint(chars[start]) + ">"
+      : slice) || "∅";
+    const after = escText(chars.slice(start + len).join(""));
+    return before + "<mark class='copy-diff-mark'>" + mark + "</mark>" + after;
+  }
+
+  function copyDiffHtml(issue) {
+    if (!issue || !issue.diff) return "";
+    const d = issue.diff;
+    const title = "Где ошибка · строка " + (d.line + 1);
+    const expectedMark = d.expectedMark != null ? d.expectedMark : d.markLen;
+    const actualMark = d.actualMark != null ? d.actualMark : d.markLen;
+    return "<div class='copy-diff'>" +
+      "<div class='copy-diff-title'>" + title + "</div>" +
+      "<div class='copy-diff-row'><span>Образец</span><code>" +
+      copyMarkedLine(d.expected, d.col, expectedMark, issue.visualize) +
+      "</code></div>" +
+      "<div class='copy-diff-row is-bad'><span>У тебя</span><code>" +
+      copyMarkedLine(d.actual, d.col, actualMark, issue.visualize) +
+      "</code></div>" +
+      (issue.note ? "<p class='copy-diff-note'>" + escText(issue.note) + "</p>" : "") +
+      "</div>";
+  }
+
+  function copyDiagnostic(typed, target) {
+    const a = normalizeCopyText(typed);
+    const b = normalizeCopyText(target);
+    if (a === b) return { exact: true, loose: true, message: "", issue: null, html: "" };
+    const loose = a.replace(/\s+/g, "") === b.replace(/\s+/g, "");
+    const issue = loose ? copyWhitespaceIssue(typed, target) : copyCharIssue(typed, target);
+    return {
+      exact: false, loose: loose, message: issue.message, issue: issue,
+      html: copyDiffHtml(issue)
+    };
   }
 
   // Качество ответа решает силу удара: сильный ответ — сильный удар.
@@ -16609,7 +16987,13 @@
     } else if (b.phase === "question" && b.challenge.type === "copy") {
       const input = el("copy-input");
       input.value = b.challenge.code;
-      input.addEventListener("input", () => (b.challenge.code = input.value));
+      // Не полагаемся только на input: compositionend, change и blur
+      // приходят от мобильных клавиатур и автозамены в разном порядке.
+      const syncCopy = () => { b.challenge.code = input.value; };
+      input.addEventListener("input", syncCopy);
+      input.addEventListener("change", syncCopy);
+      input.addEventListener("compositionend", syncCopy);
+      input.addEventListener("blur", syncCopy);
       input.addEventListener("keydown", (ev) => {
         if (ev.key === "Tab") {
           ev.preventDefault();
@@ -17256,8 +17640,22 @@
   function checkCopy() {
     const b = G.battle;
     if (b.phase !== "question" || b.challenge.type !== "copy") return;
+    // Подсказка от прошлой попытки (например, «засчитано с автозаменой»)
+    // не должна висеть над новым разбором ошибки.
+    clearToast();
     const target = b.challenge.task.code;
-    const typed = b.challenge.code || "";
+    // Поле могло измениться после последнего input: мобильная клавиатура,
+    // автозамена и compositionend иногда приходят позже. Берём актуальное
+    // значение из textarea, а состояние используем как запасной путь.
+    const field = typeof document !== "undefined" && typeof el === "function"
+      ? el("copy-input") : null;
+    // isConnected есть только у настоящего DOM-узла. В node-проверках
+    // textarea — заглушка, и её value не должен перебивать состояние боя.
+    const liveField = field && field.isConnected === true ? field : null;
+    const typed = liveField && typeof liveField.value === "string"
+      ? liveField.value
+      : (b.challenge.code || "");
+    b.challenge.code = typed;
     G.stats.copyTried += 1;
 
     const explain = b.challenge.task.explanation;
@@ -17266,16 +17664,20 @@
       applyAttack(0, "Ты не написал код.", true, explain, false);
       return;
     }
-    const exact = normalizeExact(typed) === normalizeExact(target);
-    const loose = normalizeLoose(typed) === normalizeLoose(target);
-    countTaskTopic("copy", b.challenge.task, exact);
+    const cmp = copyDiagnostic(typed, target);
+    countTaskTopic("copy", b.challenge.task, cmp.exact);
 
-    if (exact) {
+    if (cmp.exact) {
       G.stats.copyPassed += 1;
       G.stats.streak = (G.stats.streak || 0) + 1;
       addGold(8);
+      const normalizedNote = copyNormalizedNote(typed);
+      if (normalizedNote) {
+        toast(normalizedNote, 3600);
+        log(normalizedNote, "loot");
+      }
       applyAttack(codeDamage(), "Точное совпадение! Отличный удар!", false, explain, true);
-    } else if (loose) {
+    } else if (cmp.loose) {
       // Пункт 3: пробелы и отступы — часть задания («Соблюдай отступы!»),
       // поэтому такой ответ считается ошибкой: врагу урона нет, отвечает
       // герой. Раньше он давал ~28 урона и засчитывался как успех.
@@ -17283,18 +17685,20 @@
       G.stats.copyLoose = (G.stats.copyLoose || 0) + 1;
       applyAttack(
         0,
-        "Код совпал, но отступы сбиты — это ошибка. Сравни с образцом и попробуй снова.",
+        escText(cmp.message) ||
+          "Код совпал, но отступы сбиты — это ошибка. Сравни с образцом и попробуй снова.",
         true,
-        explain,
+        explain + cmp.html,
         false
       );
     } else {
       G.stats.streak = 0;
       applyAttack(
         0,
-        "Код отличается. Сравни с образцом и попробуй снова.",
+        escText(cmp.message) ||
+          "Код отличается. Сравни с образцом и попробуй снова.",
         true,
-        explain,
+        explain + cmp.html,
         false
       );
     }
@@ -19660,6 +20064,18 @@ function topicName(key) {
   // ---------- Обновления ----------
   // Короткая лента новостей для главного меню. Новые записи — сверху.
   const UPDATES = [
+    {
+      version: "1.56.1",
+      date: "23 ноября 2026",
+      title: "Перепиши код: точная копия и разбор ошибки",
+      items: [
+        "Неразрывные и узкие пробелы с мобильной клавиатуры больше не ломают точную копию.",
+        "Если символ действительно другой, пояснение показывает строку, образец и твой ответ с подсветкой.",
+        "Типографские кавычки, кириллические буквы и табуляция называются явно: что не так и что набрать.",
+        "Zero-width и BOM не проглатываются: игра называет невидимый символ и просит удалить.",
+        "Проверка читает актуальное поле ввода, поэтому автозамена и мобильный ввод не теряются."
+      ]
+    },
     {
       version: "1.56.0",
       date: "20 ноября 2026",
