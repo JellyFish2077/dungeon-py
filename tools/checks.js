@@ -3931,6 +3931,13 @@ const gapCopy = API.copyDiagnostic(
 log(!gapCopy.exact && /пробелы внутри/i.test(gapCopy.message) &&
   /copy-diff/.test(gapCopy.html),
   "лишний пробел внутри строки показан отдельно", gapCopy.message);
+const multiDiff = API.copyDiagnostic(
+  copyForTask.code.replace("print(i)", "print(j)"), copyForTask.code);
+const multiPlain = multiDiff.html.replace(/<[^>]+>/g, "");
+log(/copy-code-line/.test(multiDiff.html) &&
+  multiPlain.indexOf("for i in range(3):") >= 0 &&
+  multiPlain.indexOf("print(j)") >= 0,
+  "diff показывает весь код, а не только строку с ошибкой");
 const xssCopy = API.copyDiagnostic(
   copyHello.code + "<script>alert(1)</script>", copyHello.code);
 log(/&lt;/.test(xssCopy.html) && !/<script/i.test(xssCopy.html),
