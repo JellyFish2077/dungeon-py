@@ -2472,6 +2472,76 @@ pre.code {
   color: #7dd3fc;
 }
 
+/* Ошибка в «Перепиши код»: первая несовпавшая строка, образец и ответ.
+   Пробелы показываем точками, табуляцию — стрелкой, иначе отступ не увидеть. */
+.copy-diff {
+  margin-top: 10px;
+  padding: 9px 11px;
+  border: 1px solid rgba(248, 113, 113, 0.32);
+  border-left: 3px solid #ef4444;
+  border-radius: 5px;
+  background: rgba(127, 29, 29, 0.16);
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.copy-diff-title {
+  margin-bottom: 6px;
+  color: #fca5a5;
+  font: 700 10px/1.2 var(--font-ui, sans-serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.copy-diff-row {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.copy-diff-row + .copy-diff-row {
+  margin-top: 4px;
+}
+
+.copy-diff-row > span {
+  padding-top: 3px;
+  color: #93a8c8;
+  font: 600 10px/1.35 var(--font-ui, sans-serif);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.copy-diff-row code {
+  display: block;
+  min-width: 0;
+  padding: 3px 6px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.28);
+  color: #dbeafe;
+  font: 12px/1.45 "JetBrains Mono", "Consolas", monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.copy-diff-row.is-bad code {
+  color: #fecaca;
+}
+
+.copy-diff-mark {
+  border-radius: 2px;
+  background: rgba(239, 68, 68, 0.5);
+  color: #fff;
+  outline: 1px solid #f87171;
+}
+
+.copy-diff-note {
+  margin: 6px 0 0;
+  color: #fca5a5;
+  font: 500 11px/1.4 var(--font-ui, sans-serif);
+}
+
 .battle-actions {
   display: flex;
   justify-content: flex-end;

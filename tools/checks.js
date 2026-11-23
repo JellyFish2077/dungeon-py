@@ -3881,6 +3881,78 @@ log(exactEnemy.hp < hpBeforeExact, "точное совпадение бьёт �
 log(G.battle.good === true, "точное совпадение помечено зелёным");
 G.battle = null;
 
+// Невидимые символы не должны превращать точную копию в ошибку, а реальные
+// отличия — кавычки, кириллица, табуляция — должны называться в пояснении.
+const copyHello = API.COPY_TASKS.find((t) => t.id === "copy_hello") || API.COPY_TASKS[0];
+const invisibleCopies = [
+  ["NBSP", copyHello.code.replace(/ /g, " ")],
+  ["узкий NBSP", copyHello.code.replace(/ /g, " ")],
+  ["BOM", "﻿" + copyHello.code],
+  ["CRLF", copyHello.code.replace(/\n/g, "\r\n")],
+  ["хвостовой NBSP", copyHello.code + " "]
+];
+invisibleCopies.forEach(([name, code]) => {
+  const diag = API.copyDiagnostic(code, copyHello.code);
+  log(diag.exact && !diag.html,
+    "невидимый символ не мешает точной копии: " + name, diag.message);
+});
+const zeroCopy = API.copyDiagnostic(
+  copyHello.code.replace(/ /g, "​ "), copyHello.code);
+log(!zeroCopy.exact && /нулевой ширины|невидим/i.test(zeroCopy.message),
+  "zero-width назван, а не проглочен", zeroCopy.message);
+const thinCopy = API.copyDiagnostic(
+  copyHello.code.replace(/ /g, " "), copyHello.code);
+log(!thinCopy.exact && /U\+2009|тонкий/i.test(thinCopy.message),
+  "тонкий пробел назван", thinCopy.message);
+const softCopy = API.copyDiagnostic(
+  copyHello.code.replace("print", "pr­int"), copyHello.code);
+log(!softCopy.exact && /мягкий перенос|U\+00AD/i.test(softCopy.message),
+  "мягкий перенос назван", softCopy.message);
+log(API.COPY_TASKS.every((t) => API.normalizeExact(t.code) === t.code),
+  "образцы заданий не меняются нормализацией");
+const smartCopy = API.copyDiagnostic(copyHello.code.replace(/"/g, "“"), copyHello.code);
+log(!smartCopy.exact && /кавыч/i.test(smartCopy.message) && /copy-diff/.test(smartCopy.html),
+  "типографские кавычки объяснены", smartCopy.message);
+const cyrCopy = API.copyDiagnostic(copyHello.code.replace("print", "рrint"), copyHello.code);
+log(!cyrCopy.exact && /русская/i.test(cyrCopy.message) &&
+  /латинск/i.test(cyrCopy.message),
+  "кириллическая буква названа", cyrCopy.message);
+const copyForTask = API.COPY_TASKS.find((t) => t.id === "copy_for") || copyHello;
+const tabCopy = API.copyDiagnostic(copyForTask.code.replace(/^    /gm, "\t"), copyForTask.code);
+log(!tabCopy.exact && /табуляц/i.test(tabCopy.message) && /copy-diff/.test(tabCopy.html),
+  "табуляция в отступе объяснена", tabCopy.message);
+const twoSpaceCopy = API.copyDiagnostic(
+  copyForTask.code.replace(/^    /gm, "  "), copyForTask.code);
+log(!twoSpaceCopy.exact && /2/.test(twoSpaceCopy.message) &&
+  /4/.test(twoSpaceCopy.message),
+  "два пробела вместо четырёх объяснены", twoSpaceCopy.message);
+const gapCopy = API.copyDiagnostic(
+  copyHello.code.replace(", ", ",  "), copyHello.code);
+log(!gapCopy.exact && /пробелы внутри/i.test(gapCopy.message) &&
+  /copy-diff/.test(gapCopy.html),
+  "лишний пробел внутри строки показан отдельно", gapCopy.message);
+const xssCopy = API.copyDiagnostic(
+  copyHello.code + "<script>alert(1)</script>", copyHello.code);
+log(/&lt;/.test(xssCopy.html) && !/<script/i.test(xssCopy.html),
+  "diff экранирует введённый код");
+
+// Проверка берёт актуальное значение textarea, а не устаревший state:
+// мобильные клавиатуры присылают input/compositionend не всегда вовремя.
+freshRun(1);
+G.enemies = [];
+const liveEnemy = enemyOnPlayerCell("orc", 9000);
+API.openBattle(liveEnemy);
+G.battle.challenge = { type: "copy", task: copyHello, code: "неверно", hintUsed: false };
+G.battle.phase = "question";
+const liveInput = el("copy-input");
+liveInput.isConnected = true;
+liveInput.value = copyHello.code;
+API.checkCopy();
+log(G.battle.good === true,
+  "проверка читает актуальное поле, а не устаревший state");
+delete liveInput.isConnected;
+G.battle = null;
+
 // Шипы помогают в верном ударе и молчат на промахе.
 freshRun(1);
 G.traps = [];
